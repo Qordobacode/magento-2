@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!--
+  ~ @category Magento-2 Qordoba Connector Module
+  ~ @package Qordoba_Connector
+  ~ @copyright Copyright (c) 2017
+  ~ @license https://www.qordoba.com/terms
+  -->
+
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Cron:etc/crontab.xsd">
+    <group id="qordoba">
+        <job name="qordoba_submit" instance="Qordoba\Connector\Cron\Submit" method="execute">
+            <schedule>*/1 * * * *</schedule>
+        </job>
+        <job name="qordoba_download" instance="Qordoba\Connector\Cron\Download" method="execute">
+            <schedule>*/10 * * * *</schedule>
+        </job>
+    </group>
+</config>
