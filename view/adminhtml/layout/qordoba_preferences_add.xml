@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<!--
+  ~ @category Magento-2 Qordoba Connector Module
+  ~ @package Qordoba_Connector
+  ~ @copyright Copyright (c) 2017
+  ~ @license https://www.qordoba.com/terms
+  -->
+<page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="urn:magento:framework:View/Layout/etc/page_configuration.xsd">
+    <body>
+        <referenceContainer name="content">
+            <uiComponent name="qordoba_preferences_form"/>
+        </referenceContainer>
+    </body>
+</page>
