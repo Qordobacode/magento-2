@@ -1,0 +1,20 @@
+<!--
+  ~ @category Magento-2 Qordoba Connector Module
+  ~ @package Qordoba_Connector
+  ~ @copyright Copyright (c) 2017
+  ~ @license https://www.qordoba.com/terms
+  -->
+
+<input class="admin__control-text" type="number" minlength="4" maxlength="5"
+       data-bind="
+        event: {change: userChanges},
+        value: value,
+        hasFocus: focused,
+        valueUpdate: valueUpdate,
+        attr: {
+            name: inputName,
+            placeholder: placeholder,
+            'aria-describedby': noticeId,
+            id: uid,
+            disabled: disabled
+    }"/>
