@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<!--
+  ~ @category Magento-2 Qordoba Connector Module
+  ~ @package Qordoba_Connector
+  ~ @copyright Copyright (c) 2017
+  ~ @license https://www.qordoba.com/terms
+  -->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Backend:etc/menu.xsd">
+    <menu>
+        <add id="Qordoba::block" title="Qordoba" module="Qordoba_Connector" sortOrder="9999" resource="Qordoba_Connector::content"/>
+        <add id="Qordoba::preferences" title="Preferences" module="Qordoba_Connector" sortOrder="1" parent="Qordoba::block" action="qordoba/preferences/index" resource="Qordoba_Connector::preferences"/>
+        <add id="Qordoba::submission" title="Submissions" module="Qordoba_Connector" sortOrder="10" parent="Qordoba::block" action="qordoba/submissions/index" resource="Qordoba_Connector::submissions"/>
+        <add id="Qordoba::events" title="Events Log" module="Qordoba_Connector" sortOrder="30" parent="Qordoba::block" action="qordoba/events/index" resource="Qordoba_Connector::events"/>
+    </menu>
+</config>
