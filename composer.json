@@ -3,9 +3,9 @@
   "description": "",
   "require": {
     "php": "~5.6.0|7.0.2|7.0.4|~7.0.6|~7.1.0",
-    "magento/framework": "~100.0",
-    "magento/module-catalog": "~102.0.0",
-    "magento/module-cms": "~102.0.0",
+    "magento/framework": "*",
+    "magento/module-catalog": "*",
+    "magento/module-cms": "*",
     "qordoba/qordoba-php": "~1.0.0"
   },
   "require-dev": {
@@ -13,12 +13,6 @@
   },
   "type": "magento2-module",
   "version": "0.0.1",
-  "repositories": [
-    {
-      "type": "git",
-      "url": "https://github.com/Qordobacode/magento-2"
-    }
-  ],
   "autoload": {
     "files": [
       "registration.php"
