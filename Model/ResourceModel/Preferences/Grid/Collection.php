@@ -50,13 +50,12 @@ class Collection extends GridCollection implements SearchResultInterface
         LoggerInterface $logger,
         FetchStrategyInterface $fetchStrategy,
         ManagerInterface $eventManager,
-        StoreManagerInterface $storeManager,
+        \Magento\Framework\DB\Adapter\AdapterInterface $connection = null,
         $mainTable,
         $eventPrefix,
         $eventObject,
         $resourceModel,
         $model = 'Magento\Framework\View\Element\UiComponent\DataProvider\Document',
-        $connection = null,
         AbstractDb $resource = null
     ) {
         parent::__construct(
@@ -64,7 +63,6 @@ class Collection extends GridCollection implements SearchResultInterface
             $logger,
             $fetchStrategy,
             $eventManager,
-            $storeManager,
             $connection,
             $resource
         );
