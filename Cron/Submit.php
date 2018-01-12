@@ -171,6 +171,7 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
                         if (isset($categoryData['entity_id'])) {
                             $documentSection = $document->addSection('Content');
                             $documentSection->addTranslationString('title', $categoryData['name']);
+                            $documentSection->addTranslationString('description', $categoryData['description']);
                             $document->createTranslation();
                         }
                     }
@@ -212,8 +213,12 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
                     }
                 } catch (\Exception $e) {
                     $this->logger->error($e->getMessage());
-                    $this->contentRepository->markSubmissionAsError($submission['id']);
-                    $this->eventRepository->createError($submission['store_id'], $submission['id'], __($e->getMessage()));
+                    $this->contentRepository->updateSubmissionVersion($submission['id']);
+                    $this->eventRepository->createInfo(
+                        $submission['store_id'],
+                        $submission['id'],
+                        __('Submission version has been increased for: %1', $submission['file_name'])
+                    );
                     $this->logger->error(__($e->getMessage()));
                 }
             }
