@@ -103,7 +103,7 @@ class Download implements \Qordoba\Connector\Api\CronInterface
                             $translatedDocument = $this->getCurrentDocument($preferencesModel, $submission);
                             $translation = $this->getCurrentDocumentTranslation($translatedDocument, $preferencesModel);
                             if ($translation) {
-                                $this->translateContent($translation, $submission, $preference['store_id']);
+                                $this->translateContent($translation, $submission, $preference['store_id'], $preferencesModel);
                             } else {
                                 $this->contentRepository->markSubmissionAsSent($submission['id']);
                             }
@@ -180,19 +180,24 @@ class Download implements \Qordoba\Connector\Api\CronInterface
      * @param $translation
      * @param array $submission
      * @param string|int $storeId
+     * @param \Qordoba\Connector\Api\Data\PreferencesInterface $preferencesModel
      * @throws \Exception
      */
-    private function translateContent($translation, $submission, $storeId)
-    {
+    private function translateContent(
+        $translation,
+        $submission,
+        $storeId,
+        \Qordoba\Connector\Api\Data\PreferencesInterface $preferencesModel
+    ) {
         $typeId = (int)$submission['type_id'];
         if (\Qordoba\Connector\Model\Content::TYPE_PRODUCT === $typeId) {
-            $this->updateProduct($storeId, $submission, (array)$translation);
+            $this->updateProduct($storeId, $submission, (array)$translation, $preferencesModel);
         } elseif (\Qordoba\Connector\Model\Content::TYPE_PRODUCT_DESCRIPTION === $typeId) {
             $this->updateProductDescription($storeId, $submission, $translation);
         } elseif (\Qordoba\Connector\Model\Content::TYPE_PRODUCT_CATEGORY === $typeId) {
-            $this->updateProductCategory($storeId, $submission, (array)$translation);
+            $this->updateProductCategory($storeId, $submission, (array)$translation, $preferencesModel);
         } elseif (\Qordoba\Connector\Model\Content::TYPE_PAGE === $typeId) {
-            $this->updatePage($storeId, $submission, (array)$translation);
+            $this->updatePage($storeId, $submission, (array)$translation, $preferencesModel);
         } elseif (\Qordoba\Connector\Model\Content::TYPE_PAGE_CONTENT === $typeId) {
             $this->updatePageContent($storeId, $submission, $translation);
         } elseif (\Qordoba\Connector\Model\Content::TYPE_BLOCK === $typeId) {
@@ -318,10 +323,11 @@ class Download implements \Qordoba\Connector\Api\CronInterface
             $blockModel->setId(null);
         }
         $blockModel->setStores($storeId);
-        if ('nul' !== strtolower($translationData['Content']->title)) {
+        if (isset($translationData['Content']->title) && ('nul' !== strtolower($translationData['Content']->title))) {
             $blockModel->setTitle($translationData['Content']->title);
         }
-        if ('nul' !== strtolower($translationData['Content']->content)) {
+        if (isset($translationData['Content']->content)
+            && ('nul' !== strtolower($translationData['Content']->content))) {
             $blockModel->setContent($translationData['Content']->content);
         }
         $this->managerHelper->get($blockModel->getResourceName())->save($blockModel);
@@ -342,10 +348,15 @@ class Download implements \Qordoba\Connector\Api\CronInterface
      * @param int|string $storeId
      * @param array $submission
      * @param array $translationData
+     * @param \Qordoba\Connector\Api\Data\PreferencesInterface $preferences
      * @throws \RuntimeException
      */
-    private function updateProduct($storeId, $submission, array $translationData = [])
-    {
+    private function updateProduct(
+        $storeId,
+        array $submission = [],
+        array $translationData = [],
+        \Qordoba\Connector\Api\Data\PreferencesInterface $preferences
+    ) {
         $updateAction = $this->managerHelper->get(\Magento\Catalog\Model\Product\Action::class);
         $productData = [];
         if (isset($translationData['Content'])) {
@@ -355,6 +366,18 @@ class Download implements \Qordoba\Connector\Api\CronInterface
             if (isset($translationData['Content']->short_description) && ('nul' !== strtolower($translationData['Content']->short_description))) {
                 $productData['short_description'] = $translationData['Content']->short_description;
             }
+            if ($preferences->getIsSepEnabled()) {
+                if (isset($translationData['Content']->meta_title) && ('nul' !== strtolower($translationData['Content']->meta_title))) {
+                    $productData['meta_title'] = $translationData['Content']->meta_title;
+                }
+                if (isset($translationData['Content']->meta_description) && ('nul' !== strtolower($translationData['Content']->meta_description))) {
+                    $productData['meta_description'] = $translationData['Content']->meta_description;
+                }
+                if (isset($translationData['Content']->meta_keyword) && ('nul' !== strtolower($translationData['Content']->meta_keyword))) {
+                    $productData['meta_keyword'] = $translationData['Content']->meta_keyword;
+                }
+            }
+
         }
         if (0 < count($productData)) {
             $updateAction->updateAttributes([$submission['content_id']], $productData, $storeId);
@@ -405,19 +428,40 @@ class Download implements \Qordoba\Connector\Api\CronInterface
      * @param int|string $storeId
      * @param array $submission
      * @param array $translationData
+     * @param \Qordoba\Connector\Api\Data\PreferencesInterface $preferences
      * @throws \RuntimeException
      */
-    public function updateProductCategory($storeId, $submission, array $translationData = [])
-    {
+    public function updateProductCategory(
+        $storeId,
+        array $submission = [],
+        array $translationData = [],
+        \Qordoba\Connector\Api\Data\PreferencesInterface $preferences
+    ) {
         $categoryModel = $this->managerHelper->loadModel(\Magento\Catalog\Model\Category::class, $submission['content_id']);
         if ($categoryModel) {
             $categoryModel->setStoreId($storeId);
             if (isset($translationData['Content'])) {
-                if (isset($translationData['Content']->title) && ('nul' !== strtolower($translationData['Content']->title))) {
-                    $categoryModel->setData('name', $translationData['Content']->title);
+                if (isset($translationData['Content']->title)
+                    && ('nul' !== strtolower($translationData['Content']->title))) {
+                    $categoryModel->setData('name', trim($translationData['Content']->title));
                 }
-                if (isset($translationData['Content']->description) && ('nul' !== strtolower($translationData['Content']->description))) {
-                    $categoryModel->setData('description', $translationData['Content']->description);
+                if (isset($translationData['Content']->description)
+                    && ('nul' !== strtolower($translationData['Content']->description))) {
+                    $categoryModel->setData('description', trim($translationData['Content']->description));
+                }
+                if ($preferences->getIsSepEnabled()) {
+                    if (isset($translationData['Content']->meta_keywords)
+                        && ('nul' !== strtolower($translationData['Content']->meta_keywords))) {
+                        $categoryModel->setData('meta_keywords', trim($translationData['Content']->meta_keywords));
+                    }
+                    if (isset($translationData['Content']->meta_description)
+                        && ('nul' !== strtolower($translationData['Content']->meta_description))) {
+                        $categoryModel->setData('meta_description', trim($translationData['Content']->meta_description));
+                    }
+                    if (isset($translationData['Content']->meta_title)
+                        && ('nul' !== strtolower($translationData['Content']->meta_title))) {
+                        $categoryModel->setData('meta_title', trim($translationData['Content']->meta_title));
+                    }
                 }
             }
             $categoryModel->save();
@@ -439,11 +483,15 @@ class Download implements \Qordoba\Connector\Api\CronInterface
      * @param int|string $storeId
      * @param array $submission
      * @param array $translationData
+     * @param \Qordoba\Connector\Api\Data\PreferencesInterface $preferences
      * @throws \RuntimeException
-     * @throws \Exception
      */
-    public function updatePage($storeId, $submission, array $translationData = [])
-    {
+    public function updatePage(
+        $storeId,
+        array $submission = [],
+        array $translationData = [],
+        \Qordoba\Connector\Api\Data\PreferencesInterface $preferences
+    ) {
         $translatedContent = null;
         $translatedParentContent = $this->getExistingTranslation(
             $submission['content_id'],
@@ -479,14 +527,16 @@ class Download implements \Qordoba\Connector\Api\CronInterface
                 $pageModel->setTitle($translationData['Content']->title);
                 $pageModel->setContentHeading($translationData['Content']->title);
             }
-            if (isset($translationData['Content']->meta_keywords) && ('nul' !== strtolower($translationData['Content']->meta_keywords))) {
-                $pageModel->setMetaKeywords($translationData['Content']->meta_keywords);
-            }
-            if (isset($translationData['Content']->meta_description) && ('nul' !== strtolower($translationData['Content']->meta_description))) {
-                $pageModel->setMetaDescription($translationData['Content']->meta_description);
-            }
-            if (isset($translationData['Content']->meta_title) && ('nul' !== strtolower($translationData['Content']->meta_title))) {
-                $pageModel->setMetaTitle($translationData['Content']->meta_title);
+            if ($preferences->getIsSepEnabled()) {
+                if (isset($translationData['Content']->meta_keywords) && ('nul' !== strtolower($translationData['Content']->meta_keywords))) {
+                    $pageModel->setMetaKeywords($translationData['Content']->meta_keywords);
+                }
+                if (isset($translationData['Content']->meta_description) && ('nul' !== strtolower($translationData['Content']->meta_description))) {
+                    $pageModel->setMetaDescription($translationData['Content']->meta_description);
+                }
+                if (isset($translationData['Content']->meta_title) && ('nul' !== strtolower($translationData['Content']->meta_title))) {
+                    $pageModel->setMetaTitle($translationData['Content']->meta_title);
+                }
             }
             $this->managerHelper->get($pageModel->getResourceName())->save($pageModel);
             $this->translatedContentRepository->create(

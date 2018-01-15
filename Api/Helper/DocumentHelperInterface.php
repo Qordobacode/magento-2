@@ -72,4 +72,10 @@ interface DocumentHelperInterface
      * @return \Qordoba\Document
      */
     public function getEmptyDocumentByPreference(\Qordoba\Connector\Api\Data\PreferencesInterface $preferences);
+
+    /**
+     * @return \Qordoba\Connector\Api\Data\PreferencesInterface
+     * @throws \RuntimeException
+     */
+    public function getDefaultPreferences();
 }

@@ -59,8 +59,6 @@ class MassAttributeCreate extends \Magento\Backend\App\Action implements \Qordob
      */
     public function execute()
     {
-        $this->attributesCollection->setExcludeSetFilter(1);
-        $this->attributesCollection->getSelect()->setPart('order', []);
         $collectionSize = $this->attributesCollection->getSize();
         $resultRedirect = $this->resultFactory->create(\Magento\Framework\Controller\ResultFactory::TYPE_REDIRECT);
         $collectionItems = $this->attributesCollection->getItems();

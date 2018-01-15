@@ -58,6 +58,10 @@ interface PreferencesInterface
      * @const string
      */
     const IS_DEFAULT_FIELD = 'is_default';
+    /**
+     * @const string
+     */
+    const IS_SEP_ENABLED_FIELD = 'is_sep_enabled';
 
     /**
      * @return string
@@ -151,6 +155,17 @@ interface PreferencesInterface
      * @return bool
      */
     public function getIsDefault();
+
+    /**
+     * @param int|bool $isEnabled
+     * @return $this
+     */
+    public function setIsSepEnabled($isEnabled);
+
+    /**
+     * @return bool
+     */
+    public function getIsSepEnabled();
 
     /**
      * @param string $accountToken

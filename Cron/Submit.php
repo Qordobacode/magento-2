@@ -109,22 +109,24 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
                                 'title',
                                 $this->documentHelper->getDataFieldValue($pageData, 'title', __('Title'))
                             );
-                            $documentSection->addTranslationString(
-                                'meta_keywords',
-                                $this->documentHelper->getDataFieldValue($pageData, 'meta_keywords', __('Meta Keywords'))
-                            );
-                            $documentSection->addTranslationString(
-                                'meta_description',
-                                $this->documentHelper->getDataFieldValue(
-                                    $pageData,
+                            if ($this->documentHelper->getDefaultPreferences()->getIsSepEnabled()) {
+                                $documentSection->addTranslationString(
+                                    'meta_keywords',
+                                    $this->documentHelper->getDataFieldValue($pageData, 'meta_keywords', __('Meta Keywords'))
+                                );
+                                $documentSection->addTranslationString(
                                     'meta_description',
-                                    __('Meta Description')
-                                )
-                            );
-                            $documentSection->addTranslationString(
-                                'meta_title',
-                                $this->documentHelper->getDataFieldValue($pageData, 'meta_keywords', __('Meta Title'))
-                            );
+                                    $this->documentHelper->getDataFieldValue(
+                                        $pageData,
+                                        'meta_description',
+                                        __('Meta Description')
+                                    )
+                                );
+                                $documentSection->addTranslationString(
+                                    'meta_title',
+                                    $this->documentHelper->getDataFieldValue($pageData, 'meta_keywords', __('Meta Title'))
+                                );
+                            }
                             $document->createTranslation();
                         }
                     }
@@ -172,6 +174,33 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
                             $documentSection = $document->addSection('Content');
                             $documentSection->addTranslationString('title', $categoryData['name']);
                             $documentSection->addTranslationString('description', $categoryData['description']);
+                            if ($this->documentHelper->getDefaultPreferences()->getIsSepEnabled()) {
+                                $documentSection->addTranslationString(
+                                    'meta_keywords',
+                                    $this->documentHelper->getDataValue(
+                                        $categoryData,
+                                        'meta_keywords',
+                                        __('Meta Keywords')
+                                    )
+                                );
+                                $documentSection->addTranslationString(
+                                    'meta_description',
+                                    $this->documentHelper->getDataValue(
+                                        $categoryData,
+                                        'meta_description',
+                                        __('Meta Description')
+                                    )
+                                );
+                                $documentSection->addTranslationString(
+                                    'meta_title',
+                                    $this->documentHelper->getDataValue(
+                                        $categoryData,
+                                        'meta_title',
+                                        __('Meta Title')
+                                    )
+                                );
+                            }
+
                             $document->createTranslation();
                         }
                     }
@@ -187,6 +216,20 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
                                 'short_description',
                                 $this->documentHelper->getDataFieldValue($productData, 'short_description', __('Short Description'))
                             );
+                            if ($this->documentHelper->getDefaultPreferences()->getIsSepEnabled()) {
+                                $documentSection->addTranslationString(
+                                    'meta_title',
+                                    $this->documentHelper->getDataFieldValue($productData, 'meta_title', __('Meta Title'))
+                                );
+                                $documentSection->addTranslationString(
+                                    'meta_description',
+                                    $this->documentHelper->getDataFieldValue($productData, 'meta_description', __('Meta Description'))
+                                );
+                                $documentSection->addTranslationString(
+                                    'meta_keyword',
+                                    $this->documentHelper->getDataFieldValue($productData, 'meta_keyword', __('Meta Keyword'))
+                                );
+                            }
                             $document->createTranslation();
                         }
                     }
@@ -212,7 +255,6 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
                             __('Content %1 model can\'t be found.', $submissionModel->getId()));
                     }
                 } catch (\Exception $e) {
-                    $this->logger->error($e->getMessage());
                     $this->contentRepository->updateSubmissionVersion($submission['id']);
                     $this->eventRepository->createInfo(
                         $submission['store_id'],
@@ -241,6 +283,9 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
             $productData['name'] = $productModel->getName();
             $productData['description'] = $productModel->getData('description');
             $productData['short_description'] = $productModel->getData('short_description');
+            $productData['meta_title'] = $productModel->getData('meta_title');
+            $productData['meta_description'] = $productModel->getData('meta_description');
+            $productData['meta_keyword'] = $productModel->getData('meta_keyword');
         }
         return $productData;
     }

@@ -33,6 +33,11 @@ class DocumentHelper extends \Magento\Framework\App\Helper\AbstractHelper implem
     const DOCUMENT_EMPTY_FIELD_IDENTIFIER = 'nul';
 
     /**
+     * @var \Qordoba\Connector\Api\Data\PreferencesInterface
+     */
+    private static $preferencesModel;
+
+    /**
      * @return \Qordoba\Document
      * @throws \RuntimeException
      */
@@ -59,7 +64,7 @@ class DocumentHelper extends \Magento\Framework\App\Helper\AbstractHelper implem
      * @throws \RuntimeException
      */
     public function getEmptyDocument() {
-        $preferences = $this->getPreferences();
+        $preferences = $this->getDefaultPreferences();
         $document = new \Qordoba\Document(
             self::APP_QORDOBA_API_URL,
             $preferences->getEmail(),
@@ -89,17 +94,19 @@ class DocumentHelper extends \Magento\Framework\App\Helper\AbstractHelper implem
      * @return \Qordoba\Connector\Api\Data\PreferencesInterface
      * @throws \RuntimeException
      */
-    private function getPreferences()
+    public function getDefaultPreferences()
     {
-        $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
-        $storePreferenceId = $objectManager->create(\Qordoba\Connector\Model\ResourceModel\Preferences::class)
-            ->getDefault();
-        $preferenceModel = $objectManager->create(\Qordoba\Connector\Model\Preferences::class)
-            ->load($storePreferenceId);
-        if (!$preferenceModel || !$preferenceModel->getId()) {
-            throw new \RuntimeException(__('Default preferences not found.'));
+        if (!self::$preferencesModel) {
+            $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+            $storePreferenceId = $objectManager->create(\Qordoba\Connector\Model\ResourceModel\Preferences::class)
+                ->getDefault();
+            self::$preferencesModel = $objectManager->create(\Qordoba\Connector\Model\Preferences::class)
+                ->load($storePreferenceId);
+            if (!self::$preferencesModel || !self::$preferencesModel->getId()) {
+                throw new \RuntimeException(__('Default preferences not found.'));
+            }
         }
-        return $preferenceModel;
+        return self::$preferencesModel;
     }
 
     /**

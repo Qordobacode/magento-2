@@ -8,6 +8,8 @@
 
 namespace Qordoba\Connector\Model;
 
+use Qordoba\Connector\Api\Data\PreferencesInterface;
+
 /**
  * Class Preferences
  * @package Qordoba\Connector\Model
@@ -199,7 +201,7 @@ class Preferences extends \Magento\Framework\Model\AbstractModel implements
      */
     public function getIsDefault()
     {
-        return $this->getData(self::IS_DEFAULT_FIELD);
+        return (bool)$this->getData(self::IS_DEFAULT_FIELD);
     }
 
     /**
@@ -217,5 +219,22 @@ class Preferences extends \Magento\Framework\Model\AbstractModel implements
     public function getAccountToken()
     {
         return $this->getData(self::ACCOUNT_TOKEN_FIELD);
+    }
+
+    /**
+     * @param bool|int $isEnabled
+     * @return $this
+     */
+    public function setIsSepEnabled($isEnabled)
+    {
+        return $this->setData(self::IS_SEP_ENABLED_FIELD, (int)$isEnabled);
+    }
+
+    /**
+     * @return bool
+     */
+    public function getIsSepEnabled()
+    {
+        return (bool)$this->getData(self::IS_SEP_ENABLED_FIELD);
     }
 }

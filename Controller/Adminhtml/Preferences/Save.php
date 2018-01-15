@@ -87,6 +87,7 @@ class Save extends \Magento\Backend\App\Action implements \Qordoba\Connector\Api
             $model->setPassword($requestData['password']);
             $model->setIsDefault($requestData['is_default']);
             $model->setAccountToken($requestData['account_token']);
+            $model->setIsSepEnabled($requestData['is_sep_enabled']);
 
             try {
                 $this->preferencesResource->save($model);

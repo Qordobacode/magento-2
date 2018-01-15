@@ -77,6 +77,22 @@ class UpgradeSchema implements UpgradeSchemaInterface
             $this->createMappingTable($installer);
         }
 
+        if (version_compare($context->getVersion(), '1.0.1', '<')) {
+            $connection = $setup->getConnection();
+            if ($setup->getConnection()->isTableExists(self::QORDOBA_PREFERENCE_TABLE)) {
+                $connection->addColumn(
+                    self::QORDOBA_PREFERENCE_TABLE,
+                    'is_sep_enabled',
+                    [
+                        'type' => Table::TYPE_SMALLINT,
+                        'nullable' => true,
+                        'default' => 0,
+                        'comment' => 'Is SEP Enabled field'
+                    ]
+                );
+            }
+        }
+
         $setup->endSetup();
     }
 

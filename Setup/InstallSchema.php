@@ -333,6 +333,16 @@ class InstallSchema implements InstallSchemaInterface
                     'unsigned' => true
                 ]
             )->addColumn(
+                'is_sep_enabled',
+                Table::TYPE_SMALLINT,
+                null,
+                [
+                    'identity' => false,
+                    'nullable' => true,
+                    'primary' => false,
+                    'unsigned' => true
+                ]
+            )->addColumn(
                 'account_token',
                 Table::TYPE_TEXT,
                 255,
