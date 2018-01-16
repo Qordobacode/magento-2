@@ -38,6 +38,7 @@ class MassDisable extends \Magento\Backend\App\Action implements \Qordoba\Connec
 
     /**
      * @return \Magento\Framework\App\ResponseInterface|\Magento\Framework\Controller\ResultInterface|void
+     * @throws \InvalidArgumentException
      * @throws LocalizedException
      */
     public function execute()
@@ -56,5 +57,13 @@ class MassDisable extends \Magento\Backend\App\Action implements \Qordoba\Connec
             $this->messageManager->addExceptionMessage($e, __('Something went wrong while saving the data.'));
         }
         return $resultRedirect->setPath('*/*/');
+    }
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return $this->_authorization->isAllowed(self::ADMIN_RESOURCE);
     }
 }

@@ -36,6 +36,7 @@ class NewAction extends \Magento\Backend\App\Action implements \Qordoba\Connecto
      * @param \Magento\Backend\App\Action\Context $context
      * @param \Magento\Framework\View\Result\PageFactory $resultPageFactory
      * @param \Qordoba\Connector\Model\ContentRepository $contentRepository
+     * @param \Magento\Framework\App\Request\DataPersistorInterface $dataPersistor
      */
     public function __construct(
         \Magento\Backend\App\Action\Context $context,
@@ -104,5 +105,13 @@ class NewAction extends \Magento\Backend\App\Action implements \Qordoba\Connecto
             $this->messageManager->addExceptionMessage($e, __('Something went wrong while saving the data.'));
         }
         return $resultRedirect->setPath('*/*/');
+    }
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return $this->_authorization->isAllowed(self::ADMIN_RESOURCE);
     }
 }

@@ -47,4 +47,12 @@ class NewAction extends \Magento\Backend\App\Action implements \Qordoba\Connecto
         $resultPage->getConfig()->getTitle()->set(__('Qordoba') . ' / ' . __('Preferences') . ' / ' . __('Create'));
         return $resultPage;
     }
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return $this->_authorization->isAllowed(self::ADMIN_RESOURCE);
+    }
 }

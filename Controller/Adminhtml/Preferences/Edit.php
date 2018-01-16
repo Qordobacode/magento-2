@@ -46,4 +46,12 @@ class Edit extends \Magento\Backend\App\Action implements \Qordoba\Connector\Api
         $resultPage->getConfig()->getTitle()->set(__('Qordoba') . ' / ' . __('Preferences') . ' / ' . __('Edit'));
         return $resultPage;
     }
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return $this->_authorization->isAllowed(self::ADMIN_RESOURCE);
+    }
 }

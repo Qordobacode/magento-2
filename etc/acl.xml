@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!--
+  ~ @category Magento-2 Qordoba Connector Module
+  ~ @package Qordoba_Connector
+  ~ @copyright Copyright (c) 2018
+  ~ @license https://www.qordoba.com/terms
+  -->
+
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Acl/etc/acl.xsd">
+    <acl>
+        <resources>
+            <resource id="Magento_Backend::admin">
+                <resource id="Qordoba_Connector::content" title="Qordoba" sortOrder="51">
+                    <resource id="Qordoba_Connector::preferences" title="Manage Preferences" sortOrder="10"/>
+                    <resource id="Qordoba_Connector::events" title="Manage Events" sortOrder="11"/>
+                    <resource id="Qordoba_Connector::mappings" title="Manage Mappings" sortOrder="12"/>
+                    <resource id="Qordoba_Connector::submissions" title="Manage Submissions" sortOrder="13"/>
+                </resource>
+            </resource>
+        </resources>
+    </acl>
+</config>

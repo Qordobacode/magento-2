@@ -47,4 +47,12 @@ class Index extends \Magento\Backend\App\Action implements \Qordoba\Connector\Ap
         $resultPage->getConfig()->getTitle()->set(__('Qordoba') . ' / ' . __('Events'));
         return $resultPage;
     }
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return $this->_authorization->isAllowed(self::ADMIN_RESOURCE);
+    }
 }

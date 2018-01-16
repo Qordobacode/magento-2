@@ -18,7 +18,7 @@ class Index extends \Magento\Backend\App\Action implements \Qordoba\Connector\Ap
     /**
      * @const string
      */
-    const ADMIN_RESOURCE = 'Qordoba_Connector::submissions';
+    const ADMIN_RESOURCE = 'Qordoba_Connector::preferences';
 
     /**
      * @var \Magento\Framework\View\Result\PageFactory
@@ -47,5 +47,13 @@ class Index extends \Magento\Backend\App\Action implements \Qordoba\Connector\Ap
         $resultPage = $this->resultPageFactory->create();
         $resultPage->getConfig()->getTitle()->set(__('Qordoba') . ' / ' . __('Preferences'));
         return $resultPage;
+    }
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return $this->_authorization->isAllowed(self::ADMIN_RESOURCE);
     }
 }

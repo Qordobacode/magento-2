@@ -39,4 +39,12 @@ class Delete extends \Magento\Backend\App\Action implements \Qordoba\Connector\A
         $this->messageManager->addErrorMessage(__('We can not find an object to delete.'));
         return $resultRedirect->setPath('*/*/');
     }
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return $this->_authorization->isAllowed(self::ADMIN_RESOURCE);
+    }
 }

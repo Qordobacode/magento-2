@@ -43,8 +43,15 @@ class Index extends \Magento\Backend\App\Action implements \Qordoba\Connector\Ap
     public function execute()
     {
         $resultPage = $this->resultPageFactory->create();
-        $resultPage->setActiveMenu('Qordoba::submission');
         $resultPage->getConfig()->getTitle()->set(__('Qordoba') . ' / ' . __('Submissions'));
         return $resultPage;
+    }
+
+    /**
+     * @return bool
+     */
+    protected function _isAllowed()
+    {
+        return $this->_authorization->isAllowed(self::ADMIN_RESOURCE);
     }
 }
