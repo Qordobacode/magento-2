@@ -363,17 +363,21 @@ class Download implements \Qordoba\Connector\Api\CronInterface
             if (isset($translationData['Content']->title) && ('nul' !== strtolower($translationData['Content']->title))) {
                 $productData['name'] = $translationData['Content']->title;
             }
-            if (isset($translationData['Content']->short_description) && ('nul' !== strtolower($translationData['Content']->short_description))) {
+            if (isset($translationData['Content']->short_description)
+                && ('nul' !== strtolower($translationData['Content']->short_description))) {
                 $productData['short_description'] = $translationData['Content']->short_description;
             }
             if ($preferences->getIsSepEnabled()) {
-                if (isset($translationData['Content']->meta_title) && ('nul' !== strtolower($translationData['Content']->meta_title))) {
+                if (isset($translationData['Content']->meta_title)
+                    && ('nul' !== strtolower($translationData['Content']->meta_title))) {
                     $productData['meta_title'] = $translationData['Content']->meta_title;
                 }
-                if (isset($translationData['Content']->meta_description) && ('nul' !== strtolower($translationData['Content']->meta_description))) {
+                if (isset($translationData['Content']->meta_description)
+                    && ('nul' !== strtolower($translationData['Content']->meta_description))) {
                     $productData['meta_description'] = $translationData['Content']->meta_description;
                 }
-                if (isset($translationData['Content']->meta_keyword) && ('nul' !== strtolower($translationData['Content']->meta_keyword))) {
+                if (isset($translationData['Content']->meta_keyword)
+                    && ('nul' !== strtolower($translationData['Content']->meta_keyword))) {
                     $productData['meta_keyword'] = $translationData['Content']->meta_keyword;
                 }
             }
@@ -523,18 +527,22 @@ class Download implements \Qordoba\Connector\Api\CronInterface
         }
 
         if (isset($translationData['Content'])) {
-            if (isset($translationData['Content']->title) && ('nul' !== strtolower($translationData['Content']->title))) {
+            if (isset($translationData['Content']->title)
+                && ('nul' !== strtolower($translationData['Content']->title))) {
                 $pageModel->setTitle($translationData['Content']->title);
                 $pageModel->setContentHeading($translationData['Content']->title);
             }
             if ($preferences->getIsSepEnabled()) {
-                if (isset($translationData['Content']->meta_keywords) && ('nul' !== strtolower($translationData['Content']->meta_keywords))) {
+                if (isset($translationData['Content']->meta_keywords)
+                    && ('nul' !== strtolower($translationData['Content']->meta_keywords))) {
                     $pageModel->setMetaKeywords($translationData['Content']->meta_keywords);
                 }
-                if (isset($translationData['Content']->meta_description) && ('nul' !== strtolower($translationData['Content']->meta_description))) {
+                if (isset($translationData['Content']->meta_description)
+                    && ('nul' !== strtolower($translationData['Content']->meta_description))) {
                     $pageModel->setMetaDescription($translationData['Content']->meta_description);
                 }
-                if (isset($translationData['Content']->meta_title) && ('nul' !== strtolower($translationData['Content']->meta_title))) {
+                if (isset($translationData['Content']->meta_title)
+                    && ('nul' !== strtolower($translationData['Content']->meta_title))) {
                     $pageModel->setMetaTitle($translationData['Content']->meta_title);
                 }
             }
