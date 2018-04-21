@@ -53,6 +53,7 @@ class MappingRepository implements \Qordoba\Connector\Api\MappingRepositoryInter
     /**
      * @param \Qordoba\Connector\Api\Data\MappingInterface $object
      * @return mixed|\Qordoba\Connector\Api\Data\MappingInterface
+     * @throws \Magento\Framework\Exception\AbstractAggregateException
      * @throws \Magento\Framework\Exception\CouldNotSaveException
      */
     public function save(\Qordoba\Connector\Api\Data\MappingInterface $object)
@@ -83,6 +84,7 @@ class MappingRepository implements \Qordoba\Connector\Api\MappingRepositoryInter
     /**
      * @param \Qordoba\Connector\Api\Data\MappingInterface $object
      * @return bool|mixed
+     * @throws \Magento\Framework\Exception\LocalizedException
      * @throws \Magento\Framework\Exception\CouldNotDeleteException
      */
     public function delete(\Qordoba\Connector\Api\Data\MappingInterface $object)
@@ -100,6 +102,7 @@ class MappingRepository implements \Qordoba\Connector\Api\MappingRepositoryInter
      * @return bool|mixed
      * @throws \Magento\Framework\Exception\CouldNotDeleteException
      * @throws \Magento\Framework\Exception\NoSuchEntityException
+     * @throws \Magento\Framework\Exception\LocalizedException
      */
     public function deleteById($id)
     {

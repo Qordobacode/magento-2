@@ -58,8 +58,8 @@ class LocaleHelper extends \Magento\Framework\App\Helper\AbstractHelper implemen
         try {
             $documentMetaData = $this->documentHelper->getEmptyDocumentByPreference($preferences)->getMetadata();
             $localeList = [];
-            if (isset($documentMetaData['languages']->languages) && is_array($documentMetaData['languages']->languages)) {
-                foreach ($documentMetaData['languages']->languages as $language) {
+            if (isset($documentMetaData['languages']) && is_array($documentMetaData['languages'])) {
+                foreach ($documentMetaData['languages'] as $language) {
                     if (isset($language->code, $language->name)) {
                         $localeList[$language->code] = $language->name;
                     }

@@ -219,12 +219,18 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
                     }
                     if (\Qordoba\Connector\Model\Content::TYPE_PRODUCT_DESCRIPTION === $submissionTypeId) {
                         $productData = $this->getProduct($submission['content_id'], $submission['store_id']);
-                        if (isset($productData['entity_id'])) {
+                        if (isset($productData['entity_id']) && ('' !== $productData['description'])) {
                             $document = $this->documentHelper->getHTMLEmptyDocument();
                             $document->setName($submission['file_name']);
                             $document->setTag($submission['version']);
                             $document->addTranslationContent($productData['description']);
                             $document->createTranslation();
+                        } else {
+                            $this->eventRepository->createInfo(
+                                $submission['store_id'],
+                                $submission['id'],
+                                __('Product description is empty or invalid: %1', $submission['file_name'])
+                            );
                         }
                     }
                     $submissionModel = $this->managerHelper->loadModel(\Qordoba\Connector\Model\Content::class, $submission['id']);
@@ -245,7 +251,12 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
                         $submission['id'],
                         __('Submission version has been increased for: %1', $submission['file_name'])
                     );
-                    $this->logger->error(__($e->getMessage()));
+                    $this->eventRepository->createError(
+                        $submission['store_id'],
+                        $submission['id'],
+                        __($e->getMessage())
+                    );
+                    $this->logger->critical($e);
                 }
             }
         }
@@ -265,7 +276,7 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
         if ($productModel && $productModel->getId()) {
             $productData['entity_id'] = $productModel->getId();
             $productData['name'] = $productModel->getName();
-            $productData['description'] = $productModel->getData('description');
+            $productData['description'] = (string)$productModel->getData('description');
             $productData['short_description'] = $productModel->getData('short_description');
             $productData['meta_title'] = $productModel->getData('meta_title');
             $productData['meta_description'] = $productModel->getData('meta_description');

@@ -281,11 +281,10 @@ class Download implements \Qordoba\Connector\Api\CronInterface
         $tableName = $this->resource->getConnection()->getTableName('eav_attribute_option_value');
         $connection = $this->resource->getConnection();
         $existingRecord = $connection->fetchRow(
-            "SELECT value_id FROM {$tableName} WHERE option_id = :option_id AND store_id = :store_id AND value = :value",
+            "SELECT value_id FROM {$tableName} WHERE option_id = :option_id AND store_id = :store_id",
             [
                 'option_id' => $optionId,
-                'store_id' => $storeId,
-                'value' => $optionValue
+                'store_id' => $storeId
             ]
         );
         if ($existingRecord) {
