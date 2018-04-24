@@ -29,4 +29,11 @@
             </argument>
         </arguments>
     </type>
+    <type name="Magento\Framework\Console\CommandList">
+        <arguments>
+            <argument name="commands" xsi:type="array">
+                <item name="repairProductsSubmissions" xsi:type="object">\Qordoba\Connector\Console\RepairProductsSubmissionsCommand</item>
+            </argument>
+        </arguments>
+    </type>
 </config>

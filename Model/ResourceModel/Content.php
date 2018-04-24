@@ -33,27 +33,6 @@ class Content extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb
     }
 
     /**
-     *
-     */
-    protected function _construct()
-    {
-        $this->_init('qordoba_submissions', \Qordoba\Connector\Api\Data\ContentInterface::ID_FIELD);
-    }
-
-    /**
-     * @param \Magento\Framework\Model\AbstractModel $object
-     * @return $this
-     */
-    protected function _beforeSave(\Magento\Framework\Model\AbstractModel $object)
-    {
-        $object->setUpdatedTime($this->dateTime->gmtDate());
-        if ($object->isObjectNew()) {
-            $object->setCreatedTime($this->dateTime->gmtDate());
-        }
-        return parent::_beforeSave($object);
-    }
-
-    /**
      * @param string|int $contentId
      * @param string|int $typeId
      * @return string
@@ -71,12 +50,23 @@ class Content extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb
     }
 
     /**
+     * @param null $limit
+     * @return array
+     * @throws \Magento\Framework\Exception\LocalizedException
+     */
+    public function getPendingSubmissions($limit = null)
+    {
+        return $this->getContentByState(\Qordoba\Connector\Model\Content::STATE_PENDING, $limit);
+    }
+
+    /**
      * @param string|int $stateId
      * @param null|int $limit
      * @return array
      * @throws \Magento\Framework\Exception\LocalizedException
      */
-    public function getContentByState($stateId, $limit = null) {
+    public function getContentByState($stateId, $limit = null)
+    {
         $connection = $this->getConnection();
         $selectQuery = $connection->select()->from($this->getMainTable())
             ->where('state = ?', (int)$stateId)
@@ -92,18 +82,63 @@ class Content extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb
      * @return array
      * @throws \Magento\Framework\Exception\LocalizedException
      */
-    public function getPendingSubmissions($limit = null)
-    {
-        return $this->getContentByState(\Qordoba\Connector\Model\Content::STATE_PENDING, $limit);
-    }
-
-    /**
-     * @param null $limit
-     * @return array
-     * @throws \Magento\Framework\Exception\LocalizedException
-     */
     public function getSentContent($limit = null)
     {
         return $this->getContentByState(\Qordoba\Connector\Model\Content::STATE_SENT, $limit);
+    }
+
+    /**
+     * @param array[int] $typeList
+     * @param null|int $limit
+     * @return array
+     * @throws \Magento\Framework\Exception\LocalizedException
+     */
+    public function getSubmissionsContentIdsByTypes(array $typeList = [], $limit = null)
+    {
+        $connection = $this->getConnection();
+        $selectQuery = $connection->select()
+            ->from($this->getMainTable(), \Qordoba\Connector\Api\Data\ContentInterface::CONTENT_ID_FIELD)
+            ->group(\Qordoba\Connector\Api\Data\ContentInterface::CONTENT_ID_FIELD)
+            ->where(\Qordoba\Connector\Api\Data\ContentInterface::TYPE_ID_FIELD . ' IN (?)', $typeList);
+        if ($limit && (0 < (int)$limit)) {
+            $selectQuery->limit($limit);
+        }
+        return $connection->fetchAll($selectQuery);
+    }
+
+    /**
+     * @param null|int $contentId
+     * @return array
+     * @throws \Magento\Framework\Exception\LocalizedException
+     */
+    public function getByContentId($contentId = null)
+    {
+        $connection = $this->getConnection();
+        $selectQuery = $connection->select();
+        $selectQuery->from($this->getMainTable())
+            ->where('content_id = ?', (int)$contentId);
+        return $connection->fetchAll($selectQuery);
+    }
+
+    /**
+     *
+     */
+    protected function _construct()
+    {
+        $this->_init('qordoba_submissions', \Qordoba\Connector\Api\Data\ContentInterface::ID_FIELD);
+    }
+
+    /**
+     * @param \Magento\Framework\Model\AbstractModel $object
+     * @return $this
+     * @throws \Magento\Framework\Exception\LocalizedException
+     */
+    protected function _beforeSave(\Magento\Framework\Model\AbstractModel $object)
+    {
+        $object->setUpdatedTime($this->dateTime->gmtDate());
+        if ($object->isObjectNew()) {
+            $object->setCreatedTime($this->dateTime->gmtDate());
+        }
+        return parent::_beforeSave($object);
     }
 }
