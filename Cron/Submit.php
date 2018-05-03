@@ -2,7 +2,7 @@
 /**
  * @category Magento-2 Qordoba Connector Module
  * @package Qordoba_Connector
- * @copyright Copyright (c) 2017
+ * @copyright Copyright (c) 2018
  * @license https://www.qordoba.com/terms
  */
 
@@ -51,6 +51,15 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
      * @var \Qordoba\Connector\Api\ContentRepositoryInterface
      */
     protected $contentRepository;
+    /**
+     * @var \Qordoba\Connector\Api\Helper\ChecksumHelperInterface
+     */
+    protected $checksumHelper;
+
+    /**
+     * @var \Qordoba\Connector\Api\Helper\ModelHelperInterface
+     */
+    protected $modelHelper;
 
     /**
      * Submit constructor.
@@ -61,7 +70,9 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
      * @param \Magento\Store\Model\StoreManagerInterface $storeManager
      * @param \Magento\Framework\App\ResourceConnection $resource
      * @param \Qordoba\Connector\Api\Helper\DocumentHelperInterface $documentHelper
+     * @param \Qordoba\Connector\Api\Helper\ChecksumHelperInterface $checksumHelper
      * @param \Qordoba\Connector\Api\Helper\ObjectManagerHelperInterface $managerHelper
+     * @param \Qordoba\Connector\Api\Helper\ModelHelperInterface $modelHelper
      */
     public function __construct(
         \Psr\Log\LoggerInterface $logger,
@@ -71,7 +82,9 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
         \Magento\Store\Model\StoreManagerInterface $storeManager,
         \Magento\Framework\App\ResourceConnection $resource,
         \Qordoba\Connector\Api\Helper\DocumentHelperInterface $documentHelper,
-        \Qordoba\Connector\Api\Helper\ObjectManagerHelperInterface $managerHelper
+        \Qordoba\Connector\Api\Helper\ChecksumHelperInterface $checksumHelper,
+        \Qordoba\Connector\Api\Helper\ObjectManagerHelperInterface $managerHelper,
+        \Qordoba\Connector\Api\Helper\ModelHelperInterface $modelHelper
     ) {
         $this->logger = $logger;
         $this->eventRepository = $eventRepository;
@@ -80,7 +93,9 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
         $this->storeManager = $storeManager;
         $this->resource = $resource;
         $this->documentHelper = $documentHelper;
+        $this->checksumHelper = $checksumHelper;
         $this->managerHelper = $managerHelper;
+        $this->modelHelper = $modelHelper;
     }
 
     /**
@@ -96,151 +111,44 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
             $document = $this->documentHelper->getEmptyJsonDocument();
             $document->setName($submission['file_name']);
             $document->setTag($submission['version']);
-            $submissionModel = $this->managerHelper->loadModel(\Qordoba\Connector\Model\Content::class, $submission['id']);
+            $submissionModel = $this->managerHelper->loadModel(\Qordoba\Connector\Model\Content::class,
+                $submission['id']);
             $submissionTypeId = (int)$submissionModel->getTypeId();
             if ($submissionModel->isUnlocked()) {
                 try {
                     $this->contentRepository->markSubmissionAsLocked($submissionModel->getId());
                     if (\Qordoba\Connector\Model\Content::TYPE_PAGE === $submissionTypeId) {
-                        $pageData = $this->getPage($submissionModel->getContentId());
-                        if (isset($pageData['page_id'])) {
-                            $documentSection = $document->addSection('Content');
-                            $documentSection->addTranslationString(
-                                'title',
-                                $this->documentHelper->getDataFieldValue($pageData, 'title', __('Title'))
-                            );
-                            if ($this->documentHelper->getDefaultPreferences()->getIsSepEnabled()) {
-                                $metaTitle = $this->documentHelper->getDataFieldValue($pageData, 'meta_title');
-                                $metaKeywords = $this->documentHelper->getDataFieldValue($pageData, 'meta_keywords');
-                                $metaDescription = $this->documentHelper->getDataFieldValue($pageData, 'meta_description');
-                                if ('' !== $metaKeywords) {
-                                    $documentSection->addTranslationString('meta_keywords', $metaKeywords);
-                                }
-                                if ('' !== $metaDescription) {
-                                    $documentSection->addTranslationString('meta_description', $metaDescription);
-                                }
-                                if ('' !== $metaTitle) {
-                                    $documentSection->addTranslationString('meta_title', $metaTitle);
-                                }
-                            }
-                            $document->createTranslation();
-                        }
+                        $this->submitPage($submission, $document);
                     }
                     if (\Qordoba\Connector\Model\Content::TYPE_PAGE_CONTENT === $submissionTypeId) {
-                        $pageData = $this->getPage($submissionModel->getContentId());
-                        if (isset($pageData['page_id'])) {
-                            $document = $this->documentHelper->getHTMLEmptyDocument();
-                            $document->setName($submission['file_name']);
-                            $document->setTag($submission['version']);
-                            $document->addTranslationContent($pageData['content']);
-                            $document->createTranslation();
-                        }
+                        $this->submitPageContent($submission);
                     }
                     if (\Qordoba\Connector\Model\Content::TYPE_BLOCK === $submissionTypeId) {
-                        $blockData = $this->getBlock($submission['content_id']);
-                        if (isset($blockData['block_id'])) {
-                            $documentSection = $document->addSection('Content');
-                            $documentSection->addTranslationString('title', $blockData['title']);
-                            $documentSection->addTranslationString('content', $blockData['content']);
-                            $document->createTranslation();
-                        }
+                        $this->submitBlock($submission, $document);
                     }
                     if (\Qordoba\Connector\Model\Content::TYPE_PRODUCT_ATTRIBUTE === $submissionTypeId) {
-                        $attributeData = $this->getProductAttribute($submission['content_id']);
-                        if (isset($attributeData['attribute_id'])) {
-                            $documentSection = $document->addSection('Content');
-                            $documentSection->addTranslationString('title', $attributeData['title']);
-                            $eavConfig = \Magento\Framework\App\ObjectManager::getInstance()->get(\Magento\Eav\Model\Config::class);
-                            $attribute = $eavConfig->getAttribute('catalog_product', $attributeData['code']);
-                            $options = $attribute->getSource()->getAllOptions();
-                            if ($options && is_array($options)) {
-                                $documentSection = $document->addSection('Options');
-                                foreach ($options as $option) {
-                                    if ('' !== trim($option['label'])) {
-                                        $documentSection->addTranslationString(trim($option['value']), trim($option['label']));
-                                    }
-                                }
-                            }
-                            $document->createTranslation();
-                        }
+                        $this->submitProductAttribute($submission, $document);
                     }
                     if (\Qordoba\Connector\Model\Content::TYPE_PRODUCT_CATEGORY === $submissionTypeId) {
-                        $categoryData = $this->getProductCategory($submission['content_id'], $submission['store_id']);
-                        if (isset($categoryData['entity_id'])) {
-                            $documentSection = $document->addSection('Content');
-                            $documentSection->addTranslationString('title', $categoryData['name']);
-                            $documentSection->addTranslationString('description', $categoryData['description']);
-                            if ($this->documentHelper->getDefaultPreferences()->getIsSepEnabled()) {
-                                $metaTitle = $this->documentHelper->getDataFieldValue($categoryData, 'meta_title');
-                                $metaKeywords = $this->documentHelper->getDataFieldValue($categoryData, 'meta_keywords');
-                                $metaDescription = $this->documentHelper->getDataFieldValue($categoryData, 'meta_description');
-                                if ('' !== $metaKeywords) {
-                                    $documentSection->addTranslationString('meta_keywords', $metaKeywords);
-                                }
-                                if ('' !== $metaDescription) {
-                                    $documentSection->addTranslationString('meta_description', $metaDescription);
-                                }
-                                if ('' !== $metaTitle) {
-                                    $documentSection->addTranslationString('meta_title', $metaTitle);
-                                }
-                            }
-
-                            $document->createTranslation();
-                        }
+                        $this->submitProductCategory($submission, $document);
                     }
                     if (\Qordoba\Connector\Model\Content::TYPE_PRODUCT === $submissionTypeId) {
-                        $productData = $this->getProduct($submission['content_id'], $submission['store_id']);
-                        if (isset($productData['entity_id'])) {
-                            $documentSection = $document->addSection('Content');
-                            $documentSection->addTranslationString(
-                                'title',
-                                $this->documentHelper->getDataFieldValue($productData, 'name', __('Title'))
-                            );
-                            $documentSection->addTranslationString(
-                                'short_description',
-                                $this->documentHelper->getDataFieldValue($productData, 'short_description', __('Short Description'))
-                            );
-                            if ($this->documentHelper->getDefaultPreferences()->getIsSepEnabled()) {
-                                $metaTitle = $this->documentHelper->getDataFieldValue($productData, 'meta_title');
-                                $metaKeyword = $this->documentHelper->getDataFieldValue($productData, 'meta_keyword');
-                                $metaDescription = $this->documentHelper->getDataFieldValue($productData, 'meta_description');
-                                if ('' !== $metaTitle) {
-                                    $documentSection->addTranslationString('meta_title', $metaTitle);
-                                }
-                                if ('' !== $metaDescription) {
-                                    $documentSection->addTranslationString('meta_description', $metaDescription);
-                                }
-                                if ('' !== $metaKeyword) {
-                                    $documentSection->addTranslationString('meta_keyword', $metaKeyword);
-                                }
-                            }
-                            $document->createTranslation();
-                        }
+                        $this->submitProduct($submission, $document);
                     }
                     if (\Qordoba\Connector\Model\Content::TYPE_PRODUCT_DESCRIPTION === $submissionTypeId) {
-                        $productData = $this->getProduct($submission['content_id'], $submission['store_id']);
-                        if (isset($productData['entity_id']) && ('' !== $productData['description'])) {
-                            $document = $this->documentHelper->getHTMLEmptyDocument();
-                            $document->setName($submission['file_name']);
-                            $document->setTag($submission['version']);
-                            $document->addTranslationContent($productData['description']);
-                            $document->createTranslation();
-                        } else {
-                            $this->eventRepository->createInfo(
-                                $submission['store_id'],
-                                $submission['id'],
-                                __('Product description is empty or invalid: %1', $submission['file_name'])
-                            );
-                        }
+                        $this->submitProductDescription($submission);
                     }
-                    $submissionModel = $this->managerHelper->loadModel(\Qordoba\Connector\Model\Content::class, $submission['id']);
+                    $submissionModel = $this->managerHelper->loadModel(\Qordoba\Connector\Model\Content::class,
+                        $submission['id']);
                     if ($submissionModel && $submissionModel->getId()) {
                         $this->contentRepository->markSubmissionAsSent($submissionModel->getId());
+                        $this->contentRepository->addChecksum($submission['id'],
+                            $this->getSubmissionChecksum($submissionModel));
                         $this->eventRepository->createSuccess($submissionModel->getStoreId(), $submissionModel->getId(),
                             __('Document \'%1\' has been sent to qordoba.', $document->getName()));
                     } else {
                         $this->contentRepository->markSubmissionAsError($submission['id']);
-                        $this->logger->error('<error>' . __('Content %1 model can\'t be found.', $submissionModel->getId()) . '</error>');
+                        $this->logger->error('<error>' . __('Content %1 model can\'t be found.',  $submissionModel->getId()) . '</error>');
                         $this->eventRepository->createError($submissionModel->getStoreId(), $submissionModel->getId(),
                             __('Content %1 model can\'t be found.', $submissionModel->getId()));
                     }
@@ -263,6 +171,264 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
     }
 
     /**
+     * @param array $submission
+     * @param \Qordoba\Document $document
+     * @throws \RuntimeException
+     * @throws \Qordoba\Exception\AuthException
+     * @throws \Qordoba\Exception\ConnException
+     * @throws \Qordoba\Exception\DocumentException
+     * @throws \Qordoba\Exception\ServerException
+     * @throws \Qordoba\Exception\UploadException
+     * @throws \Exception
+     */
+    private function submitPage(array $submission = [], \Qordoba\Document $document)
+    {
+        $pageData = $this->getPage($submission['content_id']);
+        if (isset($pageData['page_id'])) {
+            $documentSection = $document->addSection('Content');
+            $documentSection->addTranslationString(
+                'title',
+                $this->documentHelper->getDataFieldValue($pageData, 'title', __('Title'))
+            );
+            if ($this->documentHelper->getDefaultPreferences()->getIsSepEnabled()) {
+                $metaTitle = $this->documentHelper->getDataFieldValue($pageData, 'meta_title');
+                $metaKeywords = $this->documentHelper->getDataFieldValue($pageData, 'meta_keywords');
+                $metaDescription = $this->documentHelper->getDataFieldValue($pageData, 'meta_description');
+                if ('' !== $metaKeywords) {
+                    $documentSection->addTranslationString('meta_keywords', $metaKeywords);
+                }
+                if ('' !== $metaDescription) {
+                    $documentSection->addTranslationString('meta_description', $metaDescription);
+                }
+                if ('' !== $metaTitle) {
+                    $documentSection->addTranslationString('meta_title', $metaTitle);
+                }
+            }
+            $document->createTranslation();
+        }
+    }
+
+    /**
+     * @param string|int $pageId
+     * @return array
+     * @throws \RuntimeException
+     */
+    private function getPage($pageId)
+    {
+        $pageData = [];
+        $pageModel = $this->modelHelper->getPageModelById($pageId);
+        if ($pageModel && $pageModel->getId()) {
+            $pageData = $pageModel->getData();
+        }
+        return $pageData;
+    }
+
+    /**
+     * @param array $submission
+     * @throws \RuntimeException
+     * @throws \Qordoba\Exception\AuthException
+     * @throws \Qordoba\Exception\ConnException
+     * @throws \Qordoba\Exception\DocumentException
+     * @throws \Qordoba\Exception\ServerException
+     * @throws \Qordoba\Exception\UploadException
+     * @throws \Exception
+     */
+    private function submitPageContent(array $submission = [])
+    {
+        $pageData = $this->getPage($submission['content_id']);
+        if (isset($pageData['page_id'])) {
+            $document = $this->documentHelper->getHTMLEmptyDocument();
+            $document->setName($submission['file_name']);
+            $document->setTag($submission['version']);
+            $document->addTranslationContent($pageData['content']);
+            $document->createTranslation();
+        }
+    }
+
+    /**
+     * @param array $submission
+     * @param \Qordoba\Document $document
+     * @throws \RuntimeException
+     * @throws \Qordoba\Exception\AuthException
+     * @throws \Qordoba\Exception\ConnException
+     * @throws \Qordoba\Exception\DocumentException
+     * @throws \Qordoba\Exception\ServerException
+     * @throws \Qordoba\Exception\UploadException
+     * @throws \Exception
+     */
+    private function submitBlock(array $submission = [], \Qordoba\Document $document)
+    {
+        $blockData = $this->getBlock($submission['content_id']);
+        if (isset($blockData['block_id'])) {
+            $documentSection = $document->addSection('Content');
+            $documentSection->addTranslationString('title', $blockData['title']);
+            $documentSection->addTranslationString('content', $blockData['content']);
+            $document->createTranslation();
+        }
+    }
+
+    /**
+     * @param string|int $blockId
+     * @return array
+     * @throws \RuntimeException
+     */
+    private function getBlock($blockId)
+    {
+        $blockData = [];
+        $blockModel = $this->modelHelper->getBlockModelById($blockId);
+        if ($blockModel && $blockModel->getId()) {
+            $blockData = $blockModel->getData();
+        }
+        return $blockData;
+    }
+
+    /**
+     * @param array $submission
+     * @param \Qordoba\Document $document
+     * @throws \RuntimeException
+     * @throws \Qordoba\Exception\AuthException
+     * @throws \Qordoba\Exception\ConnException
+     * @throws \Qordoba\Exception\DocumentException
+     * @throws \Qordoba\Exception\ServerException
+     * @throws \Qordoba\Exception\UploadException
+     * @throws \Exception
+     */
+    private function submitProductAttribute(array $submission = [], \Qordoba\Document $document)
+    {
+        $attributeData = $this->getProductAttribute($submission['content_id']);
+        if (isset($attributeData['attribute_id'])) {
+            $documentSection = $document->addSection('Content');
+            $documentSection->addTranslationString('title', $attributeData['title']);
+            $eavConfig = \Magento\Framework\App\ObjectManager::getInstance()->get(\Magento\Eav\Model\Config::class);
+            $attribute = $eavConfig->getAttribute('catalog_product', $attributeData['code']);
+            $options = $attribute->getSource()->getAllOptions();
+            if ($options && is_array($options)) {
+                $documentSection = $document->addSection('Options');
+                foreach ($options as $option) {
+                    if ('' !== trim($option['label'])) {
+                        $documentSection->addTranslationString(trim($option['value']),
+                            trim($option['label']));
+                    }
+                }
+            }
+            $document->createTranslation();
+        }
+    }
+
+    /**
+     * @param string|int $attributeId
+     * @return array
+     * @throws \RuntimeException
+     */
+    private function getProductAttribute($attributeId)
+    {
+        $attributeData = [];
+        $attributeModel = $this->modelHelper->getProductAttributeModelById($attributeId);
+        if ($attributeModel && $attributeModel->getId()) {
+            $attributeData['attribute_id'] = $attributeModel->getId();
+            $attributeData['title'] = $attributeModel->getDefaultFrontendLabel();
+            $attributeData['code'] = $attributeModel->getName();
+        }
+        return $attributeData;
+    }
+
+    /**
+     * @param array $submission
+     * @param \Qordoba\Document $document
+     * @throws \Exception
+     */
+    private function submitProductCategory(array $submission = [], \Qordoba\Document $document)
+    {
+        $categoryData = $this->getProductCategory($submission['content_id'], $submission['store_id']);
+        if (isset($categoryData['entity_id'])) {
+            $documentSection = $document->addSection('Content');
+            $documentSection->addTranslationString('title', $categoryData['name']);
+            if ('' !== $categoryData['description']) {
+                $documentSection->addTranslationString('description', $categoryData['description']);
+            }
+            if ($this->documentHelper->getDefaultPreferences()->getIsSepEnabled()) {
+                $metaTitle = $this->documentHelper->getDataFieldValue($categoryData, 'meta_title');
+                $metaKeywords = $this->documentHelper->getDataFieldValue($categoryData, 'meta_keywords');
+                $metaDescription = $this->documentHelper->getDataFieldValue($categoryData, 'meta_description');
+                if ('' !== $metaKeywords) {
+                    $documentSection->addTranslationString('meta_keywords', $metaKeywords);
+                }
+                if ('' !== $metaDescription) {
+                    $documentSection->addTranslationString('meta_description', $metaDescription);
+                }
+                if ('' !== $metaTitle) {
+                    $documentSection->addTranslationString('meta_title', $metaTitle);
+                }
+            }
+            $document->createTranslation();
+        }
+    }
+
+    /**
+     * @param string|int $categoryId
+     * @param string|int $storeId
+     * @return array
+     * @throws \RuntimeException
+     */
+    private function getProductCategory($categoryId, $storeId)
+    {
+        $categoryData = [];
+        $categoryModel = $this->modelHelper->getProductCategoryModelById($categoryId, $storeId);
+        if ($categoryModel && $categoryModel->getId()) {
+            $categoryData['entity_id'] =  $categoryModel->getId();
+            $categoryData['name'] =  $categoryModel->getData()['name'];
+            $categoryData['description'] = (string)$categoryModel->getData('description', '');
+            $categoryData['meta_title'] = $categoryModel->getData('meta_title', '');
+            $categoryData['meta_description'] = $categoryModel->getData('meta_description', '');
+            $categoryData['meta_keyword'] = $categoryModel->getData('meta_keyword', '');
+        }
+        return $categoryData;
+    }
+
+    /**
+     * @param array $submission
+     * @param \Qordoba\Document $document
+     * @throws \RuntimeException
+     * @throws \Qordoba\Exception\AuthException
+     * @throws \Qordoba\Exception\ConnException
+     * @throws \Qordoba\Exception\DocumentException
+     * @throws \Qordoba\Exception\ServerException
+     * @throws \Qordoba\Exception\UploadException
+     * @throws \Exception
+     */
+    private function submitProduct(array $submission = [], \Qordoba\Document $document)
+    {
+        $productData = $this->getProduct($submission['content_id'], $submission['store_id']);
+        if (isset($productData['entity_id'])) {
+            $documentSection = $document->addSection('Content');
+            $documentSection->addTranslationString(
+                'title',
+                $this->documentHelper->getDataFieldValue($productData, 'name', __('Title'))
+            );
+            $documentSection->addTranslationString(
+                'short_description',
+                $this->documentHelper->getDataFieldValue($productData, 'short_description', __('Short Description'))
+            );
+            if ($this->documentHelper->getDefaultPreferences()->getIsSepEnabled()) {
+                $metaTitle = $this->documentHelper->getDataFieldValue($productData, 'meta_title');
+                $metaKeyword = $this->documentHelper->getDataFieldValue($productData, 'meta_keyword');
+                $metaDescription = $this->documentHelper->getDataFieldValue($productData,
+                    'meta_description');
+                if ('' !== $metaTitle) {
+                    $documentSection->addTranslationString('meta_title', $metaTitle);
+                }
+                if ('' !== $metaDescription) {
+                    $documentSection->addTranslationString('meta_description', $metaDescription);
+                }
+                if ('' !== $metaKeyword) {
+                    $documentSection->addTranslationString('meta_keyword', $metaKeyword);
+                }
+            }
+            $document->createTranslation();
+        }
+    }
+
+    /**
      * @param string|int $productId
      * @param string|int $storeId
      * @return array
@@ -271,8 +437,7 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
     private function getProduct($productId, $storeId)
     {
         $productData = [];
-        $productModel = $this->managerHelper->create(\Magento\Catalog\Model\ProductRepository::class)
-            ->getById($productId, false, $storeId);
+        $productModel = $this->modelHelper->getProductModelById($productId, $storeId);
         if ($productModel && $productModel->getId()) {
             $productData['entity_id'] = $productModel->getId();
             $productData['name'] = $productModel->getName();
@@ -286,68 +451,66 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
     }
 
     /**
-     * @param string|int $pageId
-     * @return array
+     * @param array $submission
      * @throws \RuntimeException
+     * @throws \Qordoba\Exception\AuthException
+     * @throws \Qordoba\Exception\ConnException
+     * @throws \Qordoba\Exception\DocumentException
+     * @throws \Qordoba\Exception\ServerException
+     * @throws \Qordoba\Exception\UploadException
+     * @throws \Exception
      */
-    private function getPage($pageId)
+    private function submitProductDescription(array $submission = [])
     {
-        $pageData = [];
-        $pageModel = $this->managerHelper->create(\Magento\Cms\Model\PageRepository::class)
-            ->getById($pageId);
-        if ($pageModel && $pageModel->getId()) {
-            $pageData = $pageModel->getData();
+        $productData = $this->getProduct($submission['content_id'], $submission['store_id']);
+        if (isset($productData['entity_id']) && ('' !== $productData['description'])) {
+            $document = $this->documentHelper->getHTMLEmptyDocument();
+            $document->setName($submission['file_name']);
+            $document->setTag($submission['version']);
+            $document->addTranslationContent($productData['description']);
+            $document->createTranslation();
+        } else {
+            $this->eventRepository->createInfo(
+                $submission['store_id'],
+                $submission['id'],
+                __('Product description is empty or invalid: %1', $submission['file_name'])
+            );
         }
-        return $pageData;
     }
 
     /**
-     * @param string|int $blockId
-     * @return array
-     * @throws \RuntimeException
+     * @param \Qordoba\Connector\Model\Content $submissionModel
+     * @return string
+     * @throws \ErrorException
      */
-    private function getBlock($blockId)
+    private function getSubmissionChecksum(\Qordoba\Connector\Model\Content $submissionModel)
     {
-        $blockData = [];
-        $blockModel = $this->managerHelper->create(\Magento\Cms\Model\BlockRepository::class)
-            ->getById($blockId);
-        if ($blockModel && $blockModel->getId()) {
-            $blockData = $blockModel->getData();
+        if (in_array(
+            $submissionModel->getTypeId(),
+            [\Qordoba\Connector\Model\Content::TYPE_PAGE, \Qordoba\Connector\Model\Content::TYPE_PAGE_CONTENT],
+            true)) {
+            $model = $this->modelHelper->getPageModelById($submissionModel->getContentId());
+        } elseif (in_array(
+            $submissionModel->getTypeId(),
+            [
+                \Qordoba\Connector\Model\Content::TYPE_PRODUCT,
+                \Qordoba\Connector\Model\Content::TYPE_PRODUCT_DESCRIPTION
+            ],
+            true)) {
+            $model = $this->modelHelper->getProductModelById($submissionModel->getContentId(),
+                $submissionModel->getStoreId());
+        } elseif (\Qordoba\Connector\Model\Content::TYPE_BLOCK === $submissionModel->getTypeId()) {
+            $model = $this->modelHelper->getBlockModelById($submissionModel->getContentId());
+        } elseif (\Qordoba\Connector\Model\Content::TYPE_PRODUCT_ATTRIBUTE === $submissionModel->getTypeId()) {
+            $model = $this->modelHelper->getProductAttributeModelById($submissionModel->getContentId());
+        } elseif (\Qordoba\Connector\Model\Content::TYPE_PRODUCT_CATEGORY === $submissionModel->getTypeId()) {
+            $model = $this->modelHelper->getProductCategoryModelById(
+                $submissionModel->getContentId(),
+                $submissionModel->getStoreId()
+            );
+        } else {
+            throw new \ErrorException(__('Model is not found by submission content type'));
         }
-        return $blockData;
-    }
-
-    /**
-     * @param string|int $attributeId
-     * @return array
-     * @throws \RuntimeException
-     */
-    private function getProductAttribute($attributeId) {
-        $attributeData = [];
-        $attributeModel = $this->managerHelper->create(\Magento\Catalog\Model\ResourceModel\Eav\Attribute::class)
-            ->load($attributeId);
-        if ($attributeModel && $attributeModel->getId()) {
-            $attributeData['attribute_id'] = $attributeModel->getId();
-            $attributeData['title'] = $attributeModel->getDefaultFrontendLabel();
-            $attributeData['code'] = $attributeModel->getName();
-        }
-        return $attributeData;
-    }
-
-    /**
-     * @param string|int $categoryId
-     * @param string|int $storeId
-     * @return array
-     * @throws \RuntimeException
-     */
-    private function getProductCategory($categoryId, $storeId)
-    {
-        $categoryData = [];
-        $categoryModel = $this->managerHelper->create(\Magento\Catalog\Model\CategoryRepository::class)
-            ->get($categoryId, $storeId);
-        if ($categoryModel && $categoryModel->getId()) {
-            $categoryData = $categoryModel->getData();
-        }
-        return $categoryData;
+        return $this->checksumHelper->getChecksumByModel($model);
     }
 }

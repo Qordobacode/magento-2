@@ -2,7 +2,7 @@
 /**
  * @category Magento-2 Qordoba Connector Module
  * @package Qordoba_Connector
- * @copyright Copyright (c) 2017
+ * @copyright Copyright (c) 2018
  * @license https://www.qordoba.com/terms
  */
 
@@ -37,8 +37,7 @@ class AfterSavePreference implements \Magento\Framework\Event\ObserverInterface
         \Qordoba\Connector\Api\MappingRepositoryInterface $mappingRepository,
         \Qordoba\Connector\Api\Helper\ObjectManagerHelperInterface $objectManagerHelper,
         \Qordoba\Connector\Api\Helper\LocaleNameHelperInterface $localeNameHelper
-)
-    {
+    ) {
         $this->mappingRepository = $mappingRepository;
         $this->objectManagerHelper = $objectManagerHelper;
         $this->localeNameHelper = $localeNameHelper;
@@ -48,6 +47,7 @@ class AfterSavePreference implements \Magento\Framework\Event\ObserverInterface
      * @param \Magento\Framework\Event\Observer $observer
      * @return void
      * @throws \RuntimeException
+     * @throws \Magento\Framework\Exception\LocalizedException
      */
     public function execute(\Magento\Framework\Event\Observer $observer)
     {

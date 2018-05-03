@@ -2,7 +2,7 @@
 /**
  * @category Magento-2 Qordoba Connector Module
  * @package Qordoba_Connector
- * @copyright Copyright (c) 2017
+ * @copyright Copyright (c) 2018
  * @license https://www.qordoba.com/terms
  */
 
@@ -20,14 +20,6 @@ class Content extends \Magento\Framework\Model\AbstractModel implements
      * @const string
      */
     const CACHE_TAG = 'qordoba_connector_content';
-
-    /**
-     *
-     */
-    protected function _construct()
-    {
-        $this->_init(\Qordoba\Connector\Model\ResourceModel\Content::class);
-    }
 
     /**
      * @return array|string[]
@@ -98,20 +90,20 @@ class Content extends \Magento\Framework\Model\AbstractModel implements
     }
 
     /**
-     * @return int
-     */
-    public function getStateId()
-    {
-        return (int)$this->getData(self::STATE_FIELD);
-    }
-
-    /**
      * @param string $fileName
      * @return $this
      */
     public function setFileName($fileName)
     {
         return $this->setData(self::FILE_NAME_FIELD, trim($fileName));
+    }
+
+    /**
+     * @return string
+     */
+    public function getFileName()
+    {
+        return $this->getData(self::FILE_NAME_FIELD);
     }
 
     /**
@@ -151,6 +143,14 @@ class Content extends \Magento\Framework\Model\AbstractModel implements
     }
 
     /**
+     * @return int
+     */
+    public function getContentId()
+    {
+        return (int)$this->getData(self::CONTENT_ID_FIELD);
+    }
+
+    /**
      * @param string|int $typeId
      * @return $this
      */
@@ -160,16 +160,67 @@ class Content extends \Magento\Framework\Model\AbstractModel implements
     }
 
     /**
-     * @return bool
+     * @return int
      */
-    public function isLocked() {
-        return \Qordoba\Connector\Api\Data\ContentInterface::STATE_LOCKED === $this->getStateId();
+    public function getTypeId()
+    {
+        return (int)$this->getData(self::TYPE_ID_FIELD);
+    }
+
+    /**
+     * @return int
+     */
+    public function getStoreId()
+    {
+        return (int)$this->getData(self::STORE_ID_FIELD);
     }
 
     /**
      * @return bool
      */
-    public function isUnlocked() {
+    public function isUnlocked()
+    {
         return !$this->isLocked();
+    }
+
+    /**
+     * @return bool
+     */
+    public function isLocked()
+    {
+        return \Qordoba\Connector\Api\Data\ContentInterface::STATE_LOCKED === $this->getStateId();
+    }
+
+    /**
+     * @return int
+     */
+    public function getStateId()
+    {
+        return (int)$this->getData(self::STATE_FIELD);
+    }
+
+    /**
+     * @param $checksum
+     * @return $this
+     */
+    public function setChecksum($checksum)
+    {
+        return $this->setData(self::CHECKSUM_FIELD, trim($checksum));
+    }
+
+    /**
+     * @return $this
+     */
+    public function getChecksum()
+    {
+        return $this->getData(self::CHECKSUM_FIELD);
+    }
+
+    /**
+     *
+     */
+    protected function _construct()
+    {
+        $this->_init(\Qordoba\Connector\Model\ResourceModel\Content::class);
     }
 }

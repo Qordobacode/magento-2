@@ -2,7 +2,7 @@
 /**
  * @category Magento-2 Qordoba Connector Module
  * @package Qordoba_Connector
- * @copyright Copyright (c) 2017
+ * @copyright Copyright (c) 2018
  * @license https://www.qordoba.com/terms
  */
 
@@ -88,6 +88,20 @@ class UpgradeSchema implements UpgradeSchemaInterface
                         'nullable' => true,
                         'default' => 0,
                         'comment' => 'Is SEP Enabled field'
+                    ]
+                );
+            }
+        }
+
+        if (version_compare($context->getVersion(), '1.0.11', '<')) {
+            $connection = $setup->getConnection();
+            if ($setup->getConnection()->isTableExists(self::QORDOBA_SUBMISSIONS_TABLE)) {
+                $connection->addColumn(
+                    self::QORDOBA_SUBMISSIONS_TABLE,
+                    'checksum',
+                    [
+                        'type' => Table::TYPE_TEXT,
+                        'comment' => 'Checksum field'
                     ]
                 );
             }

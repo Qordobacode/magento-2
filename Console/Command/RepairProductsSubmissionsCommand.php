@@ -2,7 +2,7 @@
 /**
  * @category Magento-2 Qordoba Connector Module
  * @package Qordoba_Connector
- * @copyright Copyright (c) 2017
+ * @copyright Copyright (c) 2018
  * @license https://www.qordoba.com/terms
  */
 
@@ -10,7 +10,7 @@ namespace Qordoba\Connector\Console\Command;
 
 /**
  * Class CheckSubmissionsCommand
- * @package Qordoba\Connector\Console
+ * @package Qordoba\Connector\Console\Command
  */
 class RepairProductsSubmissionsCommand extends \Symfony\Component\Console\Command\Command
 {

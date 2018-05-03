@@ -2,7 +2,7 @@
 /**
  * @category Magento-2 Qordoba Connector Module
  * @package Qordoba_Connector
- * @copyright Copyright (c) 2017
+ * @copyright Copyright (c) 2018
  * @license https://www.qordoba.com/terms
  */
 
@@ -58,6 +58,10 @@ interface ContentInterface
      * @const string
      */
     const TYPE_ID_FIELD = 'type_id';
+    /**
+     * @const string
+     */
+    const CHECKSUM_FIELD = 'checksum';
     /**
      * @const int
      */
@@ -187,6 +191,11 @@ interface ContentInterface
     public function setPreferenceId($preferenceId);
 
     /**
+     * @return string
+     */
+    public function getFileName();
+
+    /**
      * @param string|int $storeId
      * @return $this
      */
@@ -197,6 +206,11 @@ interface ContentInterface
      * @return $this
      */
     public function setContentId($contentId);
+
+    /**
+     * @return int
+     */
+    public function getContentId();
 
     /**
      * @param string|int $typeId
@@ -213,4 +227,25 @@ interface ContentInterface
      * @return bool
      */
     public function isUnlocked();
+
+    /**
+     * @param $checksum
+     * @return $this
+     */
+    public function setChecksum($checksum);
+
+    /**
+     * @return $this
+     */
+    public function getChecksum();
+
+    /**
+     * @return int
+     */
+    public function getTypeId();
+
+    /**
+     * @return int
+     */
+    public function getStoreId();
 }

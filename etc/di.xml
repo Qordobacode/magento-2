@@ -2,7 +2,7 @@
 <!--
   ~ @category Magento-2 Qordoba Connector Module
   ~ @package Qordoba_Connector
-  ~ @copyright Copyright (c) 2017
+  ~ @copyright Copyright (c) 2018
   ~ @license https://www.qordoba.com/terms
   -->
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
@@ -22,6 +22,8 @@
     <preference for="Qordoba\Connector\Api\Helper\DocumentHelperInterface" type="Qordoba\Connector\Helper\DocumentHelper" />
     <preference for="Qordoba\Connector\Api\Helper\ObjectManagerHelperInterface" type="Qordoba\Connector\Helper\ObjectManagerHelper" />
     <preference for="Qordoba\Connector\Api\Helper\LocaleNameHelperInterface" type="Qordoba\Connector\Helper\LocaleHelper" />
+    <preference for="Qordoba\Connector\Api\Helper\ChecksumHelperInterface" type="Qordoba\Connector\Helper\ChecksumHelper" />
+    <preference for="Qordoba\Connector\Api\Helper\ModelHelperInterface" type="Qordoba\Connector\Helper\ModelHelper" />
     <type name="Magento\Framework\View\Element\UiComponent\DataProvider\CollectionFactory">
         <arguments>
             <argument name="collections" xsi:type="array">

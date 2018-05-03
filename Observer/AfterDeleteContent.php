@@ -2,7 +2,7 @@
 /**
  * @category Magento-2 Qordoba Connector Module
  * @package Qordoba_Connector
- * @copyright Copyright (c) 2017
+ * @copyright Copyright (c) 2018
  * @license https://www.qordoba.com/terms
  */
 
@@ -32,6 +32,7 @@ class AfterDeleteContent implements \Magento\Framework\Event\ObserverInterface
     /**
      * @param \Magento\Framework\Event $event
      * @return \Magento\Framework\Model\AbstractModel|null
+     * @throws \Magento\Framework\Exception\LocalizedException
      */
     private function getObjectModel(\Magento\Framework\Event $event)
     {
@@ -55,7 +56,9 @@ class AfterDeleteContent implements \Magento\Framework\Event\ObserverInterface
 
     /**
      * @param \Magento\Framework\Event\Observer $observer
+     * @return AfterDeleteContent
      * @throws \Magento\Framework\Exception\CouldNotDeleteException
+     * @throws \Magento\Framework\Exception\LocalizedException
      */
     public function execute(\Magento\Framework\Event\Observer $observer)
     {
@@ -63,5 +66,6 @@ class AfterDeleteContent implements \Magento\Framework\Event\ObserverInterface
         if ($object) {
             $this->contentRepository->deleteByContent($object);
         }
+        return $this;
     }
 }

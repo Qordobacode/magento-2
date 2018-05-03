@@ -2,7 +2,7 @@
 /**
  * @category Magento-2 Qordoba Connector Module
  * @package Qordoba_Connector
- * @copyright Copyright (c) 2017
+ * @copyright Copyright (c) 2018
  * @license https://www.qordoba.com/terms
  */
 
@@ -27,10 +27,6 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
      */
     protected $collectionFactory;
     /**
-     * @var \Magento\Framework\Api\SearchResultsInterfaceFactory
-     */
-    private $searchResultsFactory;
-    /**
      * @var \Qordoba\Connector\Api\EventRepositoryInterface
      */
     protected $eventRepository;
@@ -50,6 +46,14 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
      * @var \Magento\Framework\App\ResourceConnection
      */
     protected $resourceConnection;
+    /**
+     * @var \Magento\Framework\Api\SearchResultsInterfaceFactory
+     */
+    protected $searchResultsFactory;
+    /**
+     * @var \Qordoba\Connector\Api\Helper\ChecksumHelperInterface
+     */
+    protected $checksumHelper;
 
     /**
      * ContentRepository constructor.
@@ -72,6 +76,7 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
         \Qordoba\Connector\Model\ResourceModel\Preferences $preferencesResource,
         \Qordoba\Connector\Model\PreferencesRepository $preferencesRepository,
         \Qordoba\Connector\Api\Helper\FileNameHelperInterface $fileNameHelper,
+        \Qordoba\Connector\Api\Helper\ChecksumHelperInterface $checksumHelper,
         \Magento\Framework\App\ResourceConnection $resourceConnection
     ) {
         $this->objectFactory = $objectFactory;
@@ -82,6 +87,7 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
         $this->preferencesResource = $preferencesResource;
         $this->preferencesRepository = $preferencesRepository;
         $this->fileNameHelper = $fileNameHelper;
+        $this->checksumHelper = $checksumHelper;
         $this->resourceConnection = $resourceConnection;
     }
 
@@ -102,17 +108,13 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
 
     /**
      * @param string|int $id
-     * @return \Qordoba\Connector\Api\Data\ContentInterface
+     * @return bool|mixed
+     * @throws \Magento\Framework\Exception\CouldNotDeleteException
      * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
-    public function getById($id)
+    public function deleteById($id)
     {
-        $object = $this->objectFactory->create();
-        $object->load($id);
-        if (!$object->getId()) {
-            throw new \Magento\Framework\Exception\NoSuchEntityException(__('Object with id "%1" does not exist.', $id));
-        }
-        return $object;
+        return $this->delete($this->getById($id));
     }
 
     /**
@@ -132,16 +134,18 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
 
     /**
      * @param string|int $id
-     * @return bool|mixed
-     * @throws \Magento\Framework\Exception\CouldNotDeleteException
+     * @return \Qordoba\Connector\Api\Data\ContentInterface
      * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
-    public function deleteById($id)
+    public function getById($id)
     {
-        return $this->delete($this->getById($id));
+        $object = $this->objectFactory->create();
+        $object->load($id);
+        if (!$object->getId()) {
+            throw new \Magento\Framework\Exception\NoSuchEntityException(__('Object with id "%1" does not exist.', $id));
+        }
+        return $object;
     }
-
-
 
     /**
      * @param \Magento\Framework\Api\SearchCriteriaInterface $criteria
@@ -185,28 +189,6 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
     }
 
     /**
-     * @param int|string $submissionId
-     */
-    public function updateSubmissionVersion($submissionId)
-    {
-        $object = $this->objectFactory->create()->load($submissionId);
-        $object->setVersion($object->getVersion() + 1);
-        $object->setState(\Qordoba\Connector\Model\Content::STATE_PENDING);
-        $this->objectManager->create($object->getResourceName())->save($object);
-    }
-
-    /**
-     * @param string|int $contentId
-     * @param string|int $contentTypeId
-     * @return \Qordoba\Connector\Model\Content|null
-     */
-    public function getExistingSubmission($contentId, $contentTypeId)
-    {
-        return $this->objectManager->create(\Qordoba\Connector\Model\ResourceModel\Content::class)
-            ->getByContent($contentId, $contentTypeId);
-    }
-
-    /**
      * @param \Magento\Catalog\Api\Data\ProductInterface|\Magento\Framework\Model\AbstractModel $productModel
      * @param string|int $contentType
      * @return bool
@@ -221,6 +203,77 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
             $this->createSubmissionModel($productModel, $productModel->getName(), $contentType);
         }
         return true;
+    }
+
+    /**
+     * @param string|int $contentId
+     * @param string|int $contentTypeId
+     * @return \Qordoba\Connector\Model\Content|null
+     */
+    public function getExistingSubmission($contentId, $contentTypeId)
+    {
+        return $this->objectManager->create(\Qordoba\Connector\Model\ResourceModel\Content::class)
+            ->getByContent($contentId, $contentTypeId);
+    }
+
+    /**
+     * @param int|string $submissionId
+     */
+    public function updateSubmissionVersion($submissionId)
+    {
+        $object = $this->objectFactory->create()->load($submissionId);
+        $object->setVersion($object->getVersion() + 1);
+        $object->setState(\Qordoba\Connector\Model\Content::STATE_PENDING);
+        $this->objectManager->create($object->getResourceName())->save($object);
+    }
+
+    /**
+     * @param \Magento\Framework\Model\AbstractModel $model
+     * @param string|int $title
+     * @param string|int $type
+     * @throws \Exception
+     */
+    private function createSubmissionModel(\Magento\Framework\Model\AbstractModel $model, $title = '', $type)
+    {
+        $storePreferenceId = $this->objectManager->create(\Qordoba\Connector\Model\ResourceModel\Preferences::class)
+            ->getDefault();
+        $storeId = $this->getDefaultPreference()->getStoreId();
+        $fileName = $this->fileNameHelper->getFileNameByModel($model);
+        if (\Qordoba\Connector\Api\Data\ContentInterface::TYPE_PAGE_CONTENT === $type) {
+            $fileName = sprintf('%s-content', $fileName);
+        }
+        if (\Qordoba\Connector\Api\Data\ContentInterface::TYPE_PRODUCT_DESCRIPTION === $type) {
+            $fileName = sprintf('%s-description', $fileName);
+        }
+        $submissionModel = $this->objectFactory->create();
+        $submissionModel->setTitle($title);
+        $submissionModel->setFileName($fileName);
+        $submissionModel->setTypeId($type);
+        $submissionModel->setStoreId($storeId);
+        $submissionModel->setState(\Qordoba\Connector\Model\Content::STATE_PENDING);
+        $submissionModel->setVersion(\Qordoba\Connector\Model\Content::DEFAULT_VERSION);
+        $submissionModel->setPreferenceId($storePreferenceId);
+        $submissionModel->setContentId($model->getId());
+        $this->objectManager->create($submissionModel->getResourceName())->save($submissionModel);
+        $this->eventRepository->createSuccess(
+            $storeId,
+            $submissionModel->getId(),
+            __('Submission \'%1\' has been created.', $fileName)
+        );
+    }
+
+    /**
+     * @return mixed
+     * @throws \Magento\Framework\Exception\LocalizedException
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    private function getDefaultPreference()
+    {
+        $preferenceModel = $this->preferencesRepository->getById($this->preferencesResource->getDefault());
+        if (!$preferenceModel || !$preferenceModel->getId()) {
+            throw new \Magento\Framework\Exception\NoSuchEntityException(__('Default preferences not found.'));
+        }
+        return $preferenceModel;
     }
 
     /**
@@ -257,6 +310,39 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
             $this->createSubmission($attribute);
         }
         return true;
+    }
+
+    /**
+     * @param \Magento\Eav\Api\Data\AttributeOptionInterface|\Magento\Eav\Api\Data\AttributeInterface|\Magento\Catalog\Api\Data\ProductInterface|\Magento\Framework\Model\AbstractModel|\Magento\Catalog\Api\Data\CategoryInterface|\Magento\Cms\Api\Data\BlockInterface|\Magento\Cms\Api\Data\PageInterface $model
+     * @throws \Exception
+     */
+    private function createSubmission(\Magento\Framework\Model\AbstractModel $model)
+    {
+        if ($model instanceof \Magento\Catalog\Api\Data\CategoryInterface) {
+            $this->createSubmissionModel(
+                $model,
+                $model->getName(),
+                \Qordoba\Connector\Api\Data\ContentInterface::TYPE_PRODUCT_CATEGORY
+            );
+        } elseif ($model instanceof \Magento\Cms\Api\Data\BlockInterface) {
+            $this->createSubmissionModel(
+                $model,
+                $model->getTitle(),
+                \Qordoba\Connector\Api\Data\ContentInterface::TYPE_BLOCK
+            );
+        } elseif ($model instanceof \Magento\Catalog\Api\Data\ProductInterface) {
+            $this->createSubmissionModel(
+                $model,
+                $model->getName(),
+                \Qordoba\Connector\Api\Data\ContentInterface::TYPE_PRODUCT
+            );
+        } elseif ($model instanceof \Magento\Eav\Api\Data\AttributeInterface) {
+            $this->createSubmissionModel(
+                $model,
+                $model->getDefaultFrontendLabel(),
+                \Qordoba\Connector\Api\Data\ContentInterface::TYPE_PRODUCT_ATTRIBUTE
+            );
+        }
     }
 
     /**
@@ -310,12 +396,12 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
      */
     public function createBlock(\Magento\Cms\Api\Data\BlockInterface $blockModel)
     {
-        $existingSubmissionModel = $this->getExistingSubmission(
+        $existingSubmissionId = $this->getExistingSubmission(
             $blockModel->getId(),
             \Qordoba\Connector\Api\Data\ContentInterface::TYPE_BLOCK
         );
-        if ($existingSubmissionModel) {
-            $this->updateSubmissionVersion($existingSubmissionModel);
+        if ($existingSubmissionId) {
+            $this->updateSubmissionVersion($existingSubmissionId);
         } else {
             $this->createSubmission($blockModel);
         }
@@ -342,93 +428,12 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
     }
 
     /**
-     * @param \Magento\Eav\Api\Data\AttributeOptionInterface|\Magento\Eav\Api\Data\AttributeInterface|\Magento\Catalog\Api\Data\ProductInterface|\Magento\Framework\Model\AbstractModel|\Magento\Catalog\Api\Data\CategoryInterface|\Magento\Cms\Api\Data\BlockInterface|\Magento\Cms\Api\Data\PageInterface $model
-     * @throws \Exception
-     */
-    private function createSubmission(\Magento\Framework\Model\AbstractModel $model)
-    {
-        if ($model instanceof \Magento\Catalog\Api\Data\CategoryInterface) {
-            $this->createSubmissionModel(
-                $model,
-                $model->getName(),
-                \Qordoba\Connector\Api\Data\ContentInterface::TYPE_PRODUCT_CATEGORY
-            );
-        } elseif ($model instanceof \Magento\Cms\Api\Data\BlockInterface) {
-            $this->createSubmissionModel(
-                $model,
-                $model->getTitle(),
-                \Qordoba\Connector\Api\Data\ContentInterface::TYPE_BLOCK
-            );
-        } elseif ($model instanceof \Magento\Catalog\Api\Data\ProductInterface) {
-            $this->createSubmissionModel(
-                $model,
-                $model->getName(),
-                \Qordoba\Connector\Api\Data\ContentInterface::TYPE_PRODUCT
-            );
-        } elseif ($model instanceof \Magento\Eav\Api\Data\AttributeInterface) {
-            $this->createSubmissionModel(
-                $model,
-                $model->getDefaultFrontendLabel(),
-                \Qordoba\Connector\Api\Data\ContentInterface::TYPE_PRODUCT_ATTRIBUTE
-            );
-        }
-    }
-
-    /**
-     * @param \Magento\Framework\Model\AbstractModel $model
-     * @param string|int $title
-     * @param string|int $type
-     * @throws \Exception
-     */
-    private function createSubmissionModel(\Magento\Framework\Model\AbstractModel $model, $title = '', $type)
-    {
-        $storePreferenceId = $this->objectManager->create(\Qordoba\Connector\Model\ResourceModel\Preferences::class)
-            ->getDefault();
-        $storeId = $this->getDefaultPreference()->getStoreId();
-        $fileName = $this->fileNameHelper->getFileNameByModel($model);
-        if (\Qordoba\Connector\Api\Data\ContentInterface::TYPE_PAGE_CONTENT === $type) {
-            $fileName = sprintf('%s-content', $fileName);
-        }
-        if (\Qordoba\Connector\Api\Data\ContentInterface::TYPE_PRODUCT_DESCRIPTION === $type) {
-            $fileName = sprintf('%s-description', $fileName);
-        }
-        $submissionModel = $this->objectFactory->create();
-        $submissionModel->setTitle($title);
-        $submissionModel->setFileName($fileName);
-        $submissionModel->setTypeId($type);
-        $submissionModel->setStoreId($storeId);
-        $submissionModel->setState(\Qordoba\Connector\Model\Content::STATE_PENDING);
-        $submissionModel->setVersion(\Qordoba\Connector\Model\Content::DEFAULT_VERSION);
-        $submissionModel->setPreferenceId($storePreferenceId);
-        $submissionModel->setContentId($model->getId());
-        $this->objectManager->create($submissionModel->getResourceName())->save($submissionModel);
-        $this->eventRepository->createSuccess(
-            $storeId,
-            $submissionModel->getId(),
-            __('Submission \'%1\' has been created.', $fileName)
-        );
-    }
-
-    /**
-     * @return mixed
-     * @throws \Magento\Framework\Exception\LocalizedException
-     * @throws \Magento\Framework\Exception\NoSuchEntityException
-     */
-    private function getDefaultPreference()
-    {
-        $preferenceModel = $this->preferencesRepository->getById($this->preferencesResource->getDefault());
-        if (!$preferenceModel || !$preferenceModel->getId()) {
-            throw new \Magento\Framework\Exception\NoSuchEntityException(__('Default preferences not found.'));
-        }
-        return $preferenceModel;
-    }
-
-    /**
      * @param \Magento\Framework\Model\AbstractModel $model
      * @return bool
      * @throws \Magento\Framework\Exception\CouldNotDeleteException
      */
-    public function deleteByContent(\Magento\Framework\Model\AbstractModel $model) {
+    public function deleteByContent(\Magento\Framework\Model\AbstractModel $model)
+    {
         if ($model instanceof \Magento\Cms\Model\Page) {
             $this->deletePageSubmissions($model);
         } elseif ($model instanceof \Magento\Cms\Model\Block) {
@@ -464,7 +469,48 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
                 ['eq' => $page->getId()]
             );
         try {
-           $this->deleteBatch($submissionModels);
+            $this->deleteBatch($submissionModels);
+        } catch (\Exception $exception) {
+            throw new \Magento\Framework\Exception\CouldNotDeleteException(__($exception->getMessage()));
+        }
+        return true;
+    }
+
+    /**
+     * @param \Qordoba\Connector\Model\ResourceModel\Content\Collection $collection
+     * @return bool
+     * @throws \DomainException
+     */
+    public function deleteBatch(\Qordoba\Connector\Model\ResourceModel\Content\Collection $collection)
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $objectIds = $collection->getAllIds();
+        if (0 < count($objectIds)) {
+            $connection->delete(
+                $connection->getTableName('qordoba_submissions'),
+                ['id IN (?)' => array_values($objectIds)]
+            );
+        }
+        return true;
+    }
+
+    /**
+     * @param \Magento\Cms\Model\Block $block
+     * @return bool
+     * @throws \Magento\Framework\Exception\CouldNotDeleteException
+     */
+    private function deleteBlockSubmissions(\Magento\Cms\Model\Block $block)
+    {
+        $submissionModels = $this->collectionFactory->create()
+            ->addFieldToFilter(
+                \Qordoba\Connector\Api\Data\ContentInterface::TYPE_ID_FIELD,
+                ['eq' => \Qordoba\Connector\Api\Data\ContentInterface::TYPE_BLOCK]
+            )->addFieldToFilter(
+                \Qordoba\Connector\Model\Content::CONTENT_ID_FIELD,
+                ['eq' => $block->getId()]
+            );
+        try {
+            $this->deleteBatch($submissionModels);
         } catch (\Exception $exception) {
             throw new \Magento\Framework\Exception\CouldNotDeleteException(__($exception->getMessage()));
         }
@@ -500,19 +546,19 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
     }
 
     /**
-     * @param \Magento\Cms\Model\Block $block
+     * @param \Magento\Catalog\Model\Category
      * @return bool
      * @throws \Magento\Framework\Exception\CouldNotDeleteException
      */
-    private function deleteBlockSubmissions(\Magento\Cms\Model\Block $block)
+    private function deleteCategorySubmissions(\Magento\Catalog\Model\Category $category)
     {
         $submissionModels = $this->collectionFactory->create()
             ->addFieldToFilter(
                 \Qordoba\Connector\Api\Data\ContentInterface::TYPE_ID_FIELD,
-                ['eq' => \Qordoba\Connector\Api\Data\ContentInterface::TYPE_BLOCK]
+                ['eq' => \Qordoba\Connector\Api\Data\ContentInterface::TYPE_PRODUCT_CATEGORY]
             )->addFieldToFilter(
                 \Qordoba\Connector\Model\Content::CONTENT_ID_FIELD,
-                ['eq' => $block->getId()]
+                ['eq' => $category->getId()]
             );
         try {
             $this->deleteBatch($submissionModels);
@@ -546,44 +592,192 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
     }
 
     /**
-     * @param \Magento\Catalog\Model\Category
-     * @return bool
-     * @throws \Magento\Framework\Exception\CouldNotDeleteException
+     * @param \Magento\Framework\Model\AbstractModel $model
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     * @throws \Magento\Framework\Exception\LocalizedException
      */
-    private function deleteCategorySubmissions(\Magento\Catalog\Model\Category $category)
+    public function repairByContent(\Magento\Framework\Model\AbstractModel $model)
     {
-        $submissionModels = $this->collectionFactory->create()
-            ->addFieldToFilter(
-                \Qordoba\Connector\Api\Data\ContentInterface::TYPE_ID_FIELD,
-                ['eq' => \Qordoba\Connector\Api\Data\ContentInterface::TYPE_PRODUCT_CATEGORY]
-            )->addFieldToFilter(
-                \Qordoba\Connector\Model\Content::CONTENT_ID_FIELD,
-                ['eq' => $category->getId()]
-            );
-        try {
-            $this->deleteBatch($submissionModels);
-        } catch (\Exception $exception) {
-            throw new \Magento\Framework\Exception\CouldNotDeleteException(__($exception->getMessage()));
+        if ($model instanceof \Magento\Catalog\Model\Product) {
+            $model->setStoreId($this->getDefaultPreference()->getStoreId());
+            $this->repairProductSubmission($model);
+            $this->repairProductDescriptionSubmission($model);
+        } elseif ($model instanceof \Magento\Catalog\Model\Category) {
+            $model->setStoreId($this->getDefaultPreference()->getStoreId());
+            $this->repairProductCategorySubmission($model);
+        } elseif ($model instanceof \Magento\Cms\Model\Block) {
+            $model->setStoreId($this->getDefaultPreference()->getStoreId());
+            $this->repairBlockSubmission($model);
+        } elseif ($model instanceof \Magento\Cms\Model\Page) {
+            $model->setStoreId($this->getDefaultPreference()->getStoreId());
+            $this->repairPageSubmission($model);
+            $this->repairPageContentSubmission($model);
+        } elseif ($model instanceof \Magento\Catalog\Model\ResourceModel\Eav\Attribute) {
+            $this->repairProductAttributeSubmission($model);
         }
-        return true;
     }
 
     /**
-     * @param \Qordoba\Connector\Model\ResourceModel\Content\Collection $collection
-     * @return bool
-     * @throws \DomainException
+     * @param \Magento\Catalog\Model\Product $productModel
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
-    public function deleteBatch(\Qordoba\Connector\Model\ResourceModel\Content\Collection $collection)
+    private function repairProductSubmission(\Magento\Catalog\Model\Product $productModel)
     {
-        $connection = $this->resourceConnection->getConnection();
-        $objectIds = $collection->getAllIds();
-        if (0 < count($objectIds)) {
-            $connection->delete(
-                $connection->getTableName('qordoba_submissions'),
-                ['id IN (?)' => array_values($objectIds)]
-            );
+        $fileName = $this->fileNameHelper->getFileNameByModel($productModel);
+        $existingSubmissionId = $this->getExistingSubmission(
+            $productModel->getId(),
+            \Qordoba\Connector\Api\Data\ContentInterface::TYPE_PRODUCT
+        );
+        if ($existingSubmissionId) {
+            $submissionModel = $this->getById($existingSubmissionId);
+            $checksum = $submissionModel->getChecksum();
+            if (('' !== $checksum) && ($this->checksumHelper->getChecksumByModel($productModel) !== $checksum)) {
+                $this->repairSubmission($submissionModel, $productModel->getName(), $fileName);
+            }
         }
-        return true;
+    }
+
+    /**
+     * @param \Qordoba\Connector\Api\Data\ContentInterface $submissionModel
+     * @param string $name
+     * @param string $fileName
+     * @return \Qordoba\Connector\Api\Data\ContentInterface
+     */
+    public function repairSubmission(
+        \Qordoba\Connector\Api\Data\ContentInterface $submissionModel,
+        $name = '',
+        $fileName = ''
+    ) {
+        if (('' !== \trim($name)) && ('' !== \trim($fileName))) {
+            $submissionModel->setFileName($fileName);
+            $submissionModel->setTitle($name);
+            $submissionModel->setState(\Qordoba\Connector\Model\Content::STATE_PENDING);
+            $submissionModel->setVersion(\Qordoba\Connector\Model\Content::DEFAULT_VERSION);
+            $submissionModel->setChecksum('');
+            $this->objectManager->create($submissionModel->getResourceName())->save($submissionModel);
+        }
+        return $submissionModel;
+    }
+
+    /**
+     * @param \Magento\Catalog\Model\Product $productModel
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    private function repairProductDescriptionSubmission(\Magento\Catalog\Model\Product $productModel)
+    {
+        $fileName = sprintf('%s-description', $this->fileNameHelper->getFileNameByModel($productModel));
+        $existingSubmissionId = $this->getExistingSubmission(
+            $productModel->getId(),
+            \Qordoba\Connector\Api\Data\ContentInterface::TYPE_PRODUCT_DESCRIPTION
+        );
+        if ($existingSubmissionId) {
+            $submissionModel = $this->getById($existingSubmissionId);
+            if ($submissionModel->getFileName() !== $fileName) {
+                $this->repairSubmission($submissionModel, $productModel->getName(), $fileName);
+            }
+        }
+    }
+
+    /**
+     * @param \Magento\Catalog\Model\Category $categoryModel
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    private function repairProductCategorySubmission(\Magento\Catalog\Model\Category $categoryModel)
+    {
+        $fileName = $this->fileNameHelper->getFileNameByModel($categoryModel);
+        $existingSubmissionId = $this->getExistingSubmission(
+            $categoryModel->getId(),
+            \Qordoba\Connector\Api\Data\ContentInterface::TYPE_PRODUCT_CATEGORY
+        );
+        if ($existingSubmissionId) {
+            $submissionModel = $this->getById($existingSubmissionId);
+            $checksum = $submissionModel->getChecksum();
+            if (('' !== $checksum) && ($this->checksumHelper->getChecksumByModel($categoryModel) !== $checksum)) {
+                $this->repairSubmission($submissionModel, $categoryModel->getData()['name'], $fileName);
+            }
+        }
+    }
+
+    /**
+     * @param \Magento\Cms\Model\Block $blockModel
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     * @throws \Magento\Framework\Exception\LocalizedException
+     */
+    private function repairBlockSubmission(\Magento\Cms\Model\Block $blockModel)
+    {
+        $fileName = $this->fileNameHelper->getFileNameByModel($blockModel);
+        $existingSubmissionId = $this->getExistingSubmission(
+            $blockModel->getId(),
+            \Qordoba\Connector\Api\Data\ContentInterface::TYPE_BLOCK
+        );
+        if ($existingSubmissionId) {
+            $submissionModel = $this->getById($existingSubmissionId);
+            $checksum = $submissionModel->getChecksum();
+            if (('' !== $checksum) && ($this->checksumHelper->getChecksumByModel($blockModel) !== $checksum)) {
+                $this->repairSubmission($submissionModel, $blockModel->getTitle(), $fileName);
+            }
+        }
+    }
+
+    /**
+     * @param \Magento\Cms\Model\Page $pageModel
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    private function repairPageSubmission(\Magento\Cms\Model\Page $pageModel)
+    {
+        $fileName = $fileName = sprintf('%s-content', $this->fileNameHelper->getFileNameByModel($pageModel));
+        $existingSubmissionId = $this->getExistingSubmission(
+            $pageModel->getId(),
+            \Qordoba\Connector\Api\Data\ContentInterface::TYPE_PAGE
+        );
+        if ($existingSubmissionId) {
+            $submissionModel = $this->getById($existingSubmissionId);
+            $checksum = $submissionModel->getChecksum();
+            if (('' !== $checksum) && ($this->checksumHelper->getChecksumByModel($pageModel) !== $checksum)) {
+                $this->repairSubmission($submissionModel, $pageModel->getTitle(), $fileName);
+            }
+        }
+    }
+
+    /**
+     * @param \Magento\Cms\Model\Page $pageModel
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    private function repairPageContentSubmission(\Magento\Cms\Model\Page $pageModel)
+    {
+        $fileName = $this->fileNameHelper->getFileNameByModel($pageModel);
+        $existingSubmissionId = $this->getExistingSubmission(
+            $pageModel->getId(),
+            \Qordoba\Connector\Api\Data\ContentInterface::TYPE_PAGE_CONTENT
+        );
+        if ($existingSubmissionId) {
+            $submissionModel = $this->getById($existingSubmissionId);
+            $checksum = $submissionModel->getChecksum();
+            if (('' !== $checksum) && ($this->checksumHelper->getChecksumByModel($pageModel) !== $checksum)) {
+                $this->repairSubmission($submissionModel, $pageModel->getTitle(), $fileName);
+            }
+        }
+    }
+
+    /**
+     * @param \Magento\Catalog\Model\ResourceModel\Eav\Attribute $productAttributeModel
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    private function repairProductAttributeSubmission(
+        \Magento\Catalog\Model\ResourceModel\Eav\Attribute $productAttributeModel
+    ) {
+        $fileName = $this->fileNameHelper->getFileNameByModel($productAttributeModel);
+        $existingSubmissionId = $this->getExistingSubmission(
+            $productAttributeModel->getId(),
+            \Qordoba\Connector\Api\Data\ContentInterface::TYPE_PRODUCT_ATTRIBUTE
+        );
+        if ($existingSubmissionId) {
+            $submissionModel = $this->getById($existingSubmissionId);
+            $checksum = $submissionModel->getChecksum();
+            if (('' !== $checksum) && ($this->checksumHelper->getChecksumByModel($productAttributeModel) !== $checksum)) {
+                $this->repairSubmission($submissionModel, $productAttributeModel->getDefaultFrontendLabel(), $fileName);
+            }
+        }
     }
 
     /**
@@ -596,6 +790,20 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
         $object = $this->objectFactory->create()->load($submissionId);
         if ($object && $object->getId()) {
             $this->markSubmission($object, \Qordoba\Connector\Model\Content::STATE_SENT);
+        }
+    }
+
+
+    /**
+     * @param \Magento\Framework\Model\AbstractModel|\Qordoba\Connector\Model\Content $object
+     * @param string|int $label
+     * @throws \Exception
+     */
+    public function markSubmission(\Magento\Framework\Model\AbstractModel $object, $label = '')
+    {
+        if ('' !== $label) {
+            $object->setState($label);
+            $this->objectManager->create($object->getResourceName())->save($object);
         }
     }
 
@@ -639,13 +847,15 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
     }
 
     /**
-     * @param \Magento\Framework\Model\AbstractModel|\Qordoba\Connector\Model\Content $object
-     * @param string|int $label
-     * @throws \Exception
+     * @param int|string $submissionId
+     * @param string $checksum
+     * @throws \RuntimeException
      */
-    public function markSubmission(\Magento\Framework\Model\AbstractModel $object, $label = '') {
-        if ('' !== $label) {
-            $object->setState($label);
+    public function addChecksum($submissionId, $checksum = '')
+    {
+        $object = $this->objectFactory->create()->load($submissionId);
+        if (('' !== $checksum) && $object && $object->getId()) {
+            $object->setChecksum($checksum);
             $this->objectManager->create($object->getResourceName())->save($object);
         }
     }

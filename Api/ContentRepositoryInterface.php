@@ -2,7 +2,7 @@
 /**
  * @category Magento-2 Qordoba Connector Module
  * @package Qordoba_Connector
- * @copyright Copyright (c) 2017
+ * @copyright Copyright (c) 2018
  * @license https://www.qordoba.com/terms
  */
 
@@ -106,6 +106,12 @@ interface ContentRepositoryInterface
      * @throws \RuntimeException
      */
     public function markSubmissionAsSent($submissionId);
+
+    /**
+     * @param int|string $submissionId
+     * @param string $checksum
+     */
+    public function addChecksum($submissionId, $checksum);
 
     /**
      * @param int|string $submissionId

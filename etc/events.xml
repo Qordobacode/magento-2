@@ -2,7 +2,7 @@
 <!--
   ~ @category Magento-2 Qordoba Connector Module
   ~ @package Qordoba_Connector
-  ~ @copyright Copyright (c) 2017
+  ~ @copyright Copyright (c) 2018
   ~ @license https://www.qordoba.com/terms
   -->
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Event/etc/events.xsd">
@@ -23,5 +23,20 @@
     </event>
     <event name="qordoba_preferences_save_after">
         <observer name="qordoba_connector_after_save_preference" instance="Qordoba\Connector\Observer\AfterSavePreference" />
+    </event>
+    <event name="catalog_product_save_after">
+        <observer name="qordoba_connector_after_save_product" instance="Qordoba\Connector\Observer\AfterSaveContent" />
+    </event>
+    <event name="catalog_category_save_after">
+        <observer name="qordoba_connector_after_save_category" instance="Qordoba\Connector\Observer\AfterSaveContent" />
+    </event>
+    <event name="cms_block_save_after">
+        <observer name="qordoba_connector_after_save_block" instance="Qordoba\Connector\Observer\AfterSaveContent" />
+    </event>
+    <event name="catalog_entity_attribute_save_after">
+        <observer name="qordoba_connector_after_save_attribute" instance="Qordoba\Connector\Observer\AfterSaveContent" />
+    </event>
+    <event name="cms_page_save_after">
+        <observer name="qordoba_connector_after_save_page" instance="Qordoba\Connector\Observer\AfterSaveContent" />
     </event>
 </config>
