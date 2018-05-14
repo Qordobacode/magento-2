@@ -116,7 +116,7 @@
             <argument name="data" xsi:type="array">
                 <item name="config" xsi:type="array">
                     <item name="dataType" xsi:type="string">text</item>
-                    <item name="label" xsi:type="string" translate="true">Project Id</item>
+                    <item name="label" xsi:type="string" translate="true">Workspace Id</item>
                     <item name="formElement" xsi:type="string">input</item>
                     <item name="source" xsi:type="string">preferences</item>
                     <item name="dataScope" xsi:type="string">project_id</item>
@@ -138,7 +138,6 @@
                     <item name="dataScope" xsi:type="string">account_token</item>
                     <item name="validation" xsi:type="array">
                         <item name="required-entry" xsi:type="boolean">true</item>
-                        <!--<item name="pattern" xsi:type="string">/^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}+$/</item>-->
                     </item>
                 </item>
             </argument>

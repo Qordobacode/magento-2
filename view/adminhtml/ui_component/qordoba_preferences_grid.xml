@@ -140,7 +140,7 @@
         <column name="project_id">
             <argument name="data" xsi:type="array">
                 <item name="config" xsi:type="array">
-                    <item name="label" xsi:type="string" translate="true">Project ID</item>
+                    <item name="label" xsi:type="string" translate="true">Workspace ID</item>
                 </item>
             </argument>
         </column>

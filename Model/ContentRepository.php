@@ -652,7 +652,7 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
             $submissionModel->setFileName($fileName);
             $submissionModel->setTitle($name);
             $submissionModel->setState(\Qordoba\Connector\Model\Content::STATE_PENDING);
-            $submissionModel->setVersion(\Qordoba\Connector\Model\Content::DEFAULT_VERSION);
+            $submissionModel->setVersion( $submissionModel->getVersion() + 1);
             $submissionModel->setChecksum('');
             $this->objectManager->create($submissionModel->getResourceName())->save($submissionModel);
         }
