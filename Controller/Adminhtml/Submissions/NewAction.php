@@ -58,49 +58,55 @@ class NewAction extends \Magento\Backend\App\Action implements \Qordoba\Connecto
     {
         $resultRedirect = $this->resultRedirectFactory->create();
         try {
-            if ($pageId = $this->getRequest()->getParam('page_id')) {
-                $pageModel = $this->_objectManager->create(\Magento\Cms\Model\Page::class)->load($pageId);
-                if (!$pageModel->getId()) {
-                    $this->messageManager->addErrorMessage(__('This page no longer exists.'));
-                    return $resultRedirect->setPath('*/*/');
+            if (!$this->contentRepository->isDefaultPreferenceExist()) {
+                $this->messageManager->addErrorMessage(
+                    __('Submission has not been created. Please, check your confection preferences')
+                );
+            } else {
+                if ($pageId = $this->getRequest()->getParam('page_id')) {
+                    $pageModel = $this->_objectManager->create(\Magento\Cms\Model\Page::class)->load($pageId);
+                    if (!$pageModel->getId()) {
+                        $this->messageManager->addErrorMessage(__('This page no longer exists.'));
+                        return $resultRedirect->setPath('*/*/');
+                    }
+                    $this->contentRepository->createPage($pageModel, \Qordoba\Connector\Model\Content::TYPE_PAGE_CONTENT);
+                    $this->contentRepository->createPage($pageModel, \Qordoba\Connector\Model\Content::TYPE_PAGE);
                 }
-                $this->contentRepository->createPage($pageModel, \Qordoba\Connector\Model\Content::TYPE_PAGE_CONTENT);
-                $this->contentRepository->createPage($pageModel, \Qordoba\Connector\Model\Content::TYPE_PAGE);
-            }
-            if ($blockId = $this->getRequest()->getParam('block_id')) {
-                $blockModel = $this->_objectManager->create(\Magento\Cms\Model\Block::class)->load($blockId);
-                if (!$blockModel->getId()) {
-                    $this->messageManager->addErrorMessage(__('This block no longer exists.'));
-                    return $resultRedirect->setPath('*/*/');
+                if ($blockId = $this->getRequest()->getParam('block_id')) {
+                    $blockModel = $this->_objectManager->create(\Magento\Cms\Model\Block::class)->load($blockId);
+                    if (!$blockModel->getId()) {
+                        $this->messageManager->addErrorMessage(__('This block no longer exists.'));
+                        return $resultRedirect->setPath('*/*/');
+                    }
+                    $this->contentRepository->createBlock($blockModel);
                 }
-                $this->contentRepository->createBlock($blockModel);
-            }
-            if ($productId = $this->getRequest()->getParam('product_id')) {
-                $productModel = $this->_objectManager->create(\Magento\Catalog\Model\Product::class)->load($productId);
-                if (!$productModel->getId()) {
-                    $this->messageManager->addErrorMessage(__('This product no longer exists.'));
-                    return $resultRedirect->setPath('*/*/');
+                if ($productId = $this->getRequest()->getParam('product_id')) {
+                    $productModel = $this->_objectManager->create(\Magento\Catalog\Model\Product::class)->load($productId);
+                    if (!$productModel->getId()) {
+                        $this->messageManager->addErrorMessage(__('This product no longer exists.'));
+                        return $resultRedirect->setPath('*/*/');
+                    }
+                    $this->contentRepository->createProduct($productModel, \Qordoba\Connector\Model\Content::TYPE_PRODUCT);
+                    $this->contentRepository->createProduct($productModel, \Qordoba\Connector\Model\Content::TYPE_PRODUCT_DESCRIPTION);
                 }
-                $this->contentRepository->createProduct($productModel, \Qordoba\Connector\Model\Content::TYPE_PRODUCT);
-                $this->contentRepository->createProduct($productModel, \Qordoba\Connector\Model\Content::TYPE_PRODUCT_DESCRIPTION);
-            }
-            if ($categoryId = $this->getRequest()->getParam('category_id')) {
-                $categoryModel = $this->_objectManager->create(\Magento\Catalog\Model\Category::class)->load($categoryId);
-                if (!$categoryModel->getId()) {
-                    $this->messageManager->addErrorMessage(__('This category no longer exists.'));
-                    return $resultRedirect->setPath('*/*/');
+                if ($categoryId = $this->getRequest()->getParam('category_id')) {
+                    $categoryModel = $this->_objectManager->create(\Magento\Catalog\Model\Category::class)->load($categoryId);
+                    if (!$categoryModel->getId()) {
+                        $this->messageManager->addErrorMessage(__('This category no longer exists.'));
+                        return $resultRedirect->setPath('*/*/');
+                    }
+                    $this->contentRepository->createProductCategory($categoryModel);
                 }
-                $this->contentRepository->createProductCategory($categoryModel);
-            }
-            if ($attributeId = $this->getRequest()->getParam('attribute_id')) {
-                $attributeModel = $this->_objectManager->create(\Magento\Eav\Model\Attribute::class)->load($attributeId);
-                if (!$attributeModel->getId()) {
-                    $this->messageManager->addErrorMessage(__('This attribute no longer exists.'));
-                    return $resultRedirect->setPath('*/*/');
+                if ($attributeId = $this->getRequest()->getParam('attribute_id')) {
+                    $attributeModel = $this->_objectManager->create(\Magento\Eav\Model\Attribute::class)->load($attributeId);
+                    if (!$attributeModel->getId()) {
+                        $this->messageManager->addErrorMessage(__('This attribute no longer exists.'));
+                        return $resultRedirect->setPath('*/*/');
+                    }
+                    $this->contentRepository->createProductAttribute($attributeModel);
                 }
-                $this->contentRepository->createProductAttribute($attributeModel);
+                $this->messageManager->addSuccessMessage(__('Submission has been created.'));
             }
-            $this->messageManager->addSuccessMessage(__('Submission has been created.'));
         } catch (\Exception $e) {
             $this->messageManager->addExceptionMessage($e, __('Something went wrong while saving the data.'));
         }

@@ -61,14 +61,20 @@ class MassPageCreate extends \Magento\Backend\App\Action implements \Qordoba\Con
         $pageIds = $collection->getAllIds();
         $resultRedirect = $this->resultFactory->create(\Magento\Framework\Controller\ResultFactory::TYPE_REDIRECT);
         try {
-            foreach ($pageIds as $id) {
-                $pageModel = $this->_objectManager->create(\Magento\Cms\Model\Page::class)->load($id);
-                if ($pageModel && $pageModel->getId()) {
-                    $this->contentRepository->createPage($pageModel, \Qordoba\Connector\Model\Content::TYPE_PAGE_CONTENT);
-                    $this->contentRepository->createPage($pageModel, \Qordoba\Connector\Model\Content::TYPE_PAGE);
+            if (!$this->contentRepository->isDefaultPreferenceExist()) {
+                $this->messageManager->addErrorMessage(
+                    __('Submission has not been created. Please, check your confection preferences')
+                );
+            } else {
+                foreach ($pageIds as $id) {
+                    $pageModel = $this->_objectManager->create(\Magento\Cms\Model\Page::class)->load($id);
+                    if ($pageModel && $pageModel->getId()) {
+                        $this->contentRepository->createPage($pageModel, \Qordoba\Connector\Model\Content::TYPE_PAGE_CONTENT);
+                        $this->contentRepository->createPage($pageModel, \Qordoba\Connector\Model\Content::TYPE_PAGE);
+                    }
                 }
+                $this->messageManager->addSuccessMessage(__('A total of %1 record(s) have been submitted.', $collection->getSize() * 2));
             }
-            $this->messageManager->addSuccessMessage(__('A total of %1 record(s) have been submitted.', $collection->getSize() * 2));
         } catch (\Exception $e) {
             $this->messageManager->addExceptionMessage($e, __('Something went wrong while saving the data.'));
         }

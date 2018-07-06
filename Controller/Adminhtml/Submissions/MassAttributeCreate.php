@@ -63,17 +63,21 @@ class MassAttributeCreate extends \Magento\Backend\App\Action implements \Qordob
         $resultRedirect = $this->resultFactory->create(\Magento\Framework\Controller\ResultFactory::TYPE_REDIRECT);
         $collectionItems = $this->attributesCollection->getItems();
         try {
-            foreach ($collectionItems as $item) {
-                if ($item instanceof \Magento\Eav\Api\Data\AttributeInterface
-                    && ('' !== trim($item->getDefaultFrontendLabel()))) {
-                    $this->contentRepository->createProductAttribute($item);
-                } else {
-                    if (0 < $collectionSize) {
+            if (!$this->contentRepository->isDefaultPreferenceExist()) {
+                $this->messageManager->addErrorMessage(
+                    __('Submission has not been created. Please, check your confection preferences')
+                );
+            } else {
+                foreach ($collectionItems as $item) {
+                    if ($item instanceof \Magento\Eav\Api\Data\AttributeInterface
+                        && ('' !== trim($item->getDefaultFrontendLabel()))) {
+                        $this->contentRepository->createProductAttribute($item);
+                    } elseif (0 < $collectionSize) {
                         --$collectionSize;
                     }
                 }
+                $this->messageManager->addSuccessMessage(__('A total of %1 record(s) have been submitted.', $collectionSize));
             }
-            $this->messageManager->addSuccessMessage(__('A total of %1 record(s) have been submitted.', $collectionSize));
         } catch (\Exception $e) {
             $this->messageManager->addExceptionMessage($e, __('Something went wrong while saving the data.'));
         }

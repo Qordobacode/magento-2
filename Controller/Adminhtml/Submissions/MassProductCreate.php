@@ -52,7 +52,7 @@ class MassProductCreate extends \Magento\Backend\App\Action implements \Qordoba\
     }
 
     /**
-     * @return \Magento\Framework\App\ResponseInterface|\Magento\Framework\Controller\ResultInterface|void
+     * @return \Magento\Framework\App\ResponseInterface|\Magento\Framework\Controller\ResultInterface
      * @throws \InvalidArgumentException
      * @throws \Magento\Framework\Exception\LocalizedException
      */
@@ -62,14 +62,20 @@ class MassProductCreate extends \Magento\Backend\App\Action implements \Qordoba\
         $productIds = $collection->getAllIds();
         $resultRedirect = $this->resultFactory->create(\Magento\Framework\Controller\ResultFactory::TYPE_REDIRECT);
         try {
-            foreach ($productIds as $id) {
-                $productModel = $this->_objectManager->create(\Magento\Catalog\Model\Product::class)->load($id);
-                if ($productModel && $productModel->getId()) {
-                    $this->contentRepository->createProduct($productModel, \Qordoba\Connector\Api\Data\ContentInterface::TYPE_PRODUCT_DESCRIPTION);
-                    $this->contentRepository->createProduct($productModel, \Qordoba\Connector\Api\Data\ContentInterface::TYPE_PRODUCT);
+            if (!$this->contentRepository->isDefaultPreferenceExist()) {
+                $this->messageManager->addErrorMessage(
+                    __('Submission has not been created. Please, check your confection preferences')
+                );
+            } else {
+                foreach ($productIds as $id) {
+                    $productModel = $this->_objectManager->create(\Magento\Catalog\Model\Product::class)->load($id);
+                    if ($productModel && $productModel->getId()) {
+                        $this->contentRepository->createProduct($productModel, \Qordoba\Connector\Api\Data\ContentInterface::TYPE_PRODUCT_DESCRIPTION);
+                        $this->contentRepository->createProduct($productModel, \Qordoba\Connector\Api\Data\ContentInterface::TYPE_PRODUCT);
+                    }
                 }
+                $this->messageManager->addSuccessMessage(__('A total of %1 record(s) have been submitted.', $collection->getSize() * 2));
             }
-            $this->messageManager->addSuccessMessage(__('A total of %1 record(s) have been submitted.', $collection->getSize() * 2));
         } catch (\Exception $e) {
             $this->messageManager->addExceptionMessage($e, __('Something went wrong while saving the data.'));
         }

@@ -65,6 +65,7 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
      * @param \Qordoba\Connector\Model\ResourceModel\Preferences $preferencesResource
      * @param \Qordoba\Connector\Model\PreferencesRepository $preferencesRepository
      * @param \Qordoba\Connector\Api\Helper\FileNameHelperInterface $fileNameHelper
+     * @param \Qordoba\Connector\Api\Helper\ChecksumHelperInterface $checksumHelper
      * @param \Magento\Framework\App\ResourceConnection $resourceConnection
      */
     public function __construct(
@@ -233,33 +234,34 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
      * @param string|int $type
      * @throws \Exception
      */
-    private function createSubmissionModel(\Magento\Framework\Model\AbstractModel $model, $title = '', $type)
+    private function createSubmissionModel(\Magento\Framework\Model\AbstractModel $model, $title, $type)
     {
-        $storePreferenceId = $this->objectManager->create(\Qordoba\Connector\Model\ResourceModel\Preferences::class)
-            ->getDefault();
-        $storeId = $this->getDefaultPreference()->getStoreId();
-        $fileName = $this->fileNameHelper->getFileNameByModel($model);
-        if (\Qordoba\Connector\Api\Data\ContentInterface::TYPE_PAGE_CONTENT === $type) {
-            $fileName = sprintf('%s-content', $fileName);
+        $defaultPreferences = $this->getDefaultPreference();
+        if ($defaultPreferences) {
+            $storeId = $defaultPreferences->getStoreId();
+            $fileName = $this->fileNameHelper->getFileNameByModel($model);
+            if (\Qordoba\Connector\Api\Data\ContentInterface::TYPE_PAGE_CONTENT === $type) {
+                $fileName = sprintf('%s-content', $fileName);
+            }
+            if (\Qordoba\Connector\Api\Data\ContentInterface::TYPE_PRODUCT_DESCRIPTION === $type) {
+                $fileName = sprintf('%s-description', $fileName);
+            }
+            $submissionModel = $this->objectFactory->create();
+            $submissionModel->setTitle($title);
+            $submissionModel->setFileName($fileName);
+            $submissionModel->setTypeId($type);
+            $submissionModel->setStoreId($storeId);
+            $submissionModel->setState(\Qordoba\Connector\Model\Content::STATE_PENDING);
+            $submissionModel->setVersion(\Qordoba\Connector\Model\Content::DEFAULT_VERSION);
+            $submissionModel->setPreferenceId($defaultPreferences->getId());
+            $submissionModel->setContentId($model->getId());
+            $this->objectManager->create($submissionModel->getResourceName())->save($submissionModel);
+            $this->eventRepository->createSuccess(
+                $storeId,
+                $submissionModel->getId(),
+                __('Submission \'%1\' has been created.', $fileName)
+            );
         }
-        if (\Qordoba\Connector\Api\Data\ContentInterface::TYPE_PRODUCT_DESCRIPTION === $type) {
-            $fileName = sprintf('%s-description', $fileName);
-        }
-        $submissionModel = $this->objectFactory->create();
-        $submissionModel->setTitle($title);
-        $submissionModel->setFileName($fileName);
-        $submissionModel->setTypeId($type);
-        $submissionModel->setStoreId($storeId);
-        $submissionModel->setState(\Qordoba\Connector\Model\Content::STATE_PENDING);
-        $submissionModel->setVersion(\Qordoba\Connector\Model\Content::DEFAULT_VERSION);
-        $submissionModel->setPreferenceId($storePreferenceId);
-        $submissionModel->setContentId($model->getId());
-        $this->objectManager->create($submissionModel->getResourceName())->save($submissionModel);
-        $this->eventRepository->createSuccess(
-            $storeId,
-            $submissionModel->getId(),
-            __('Submission \'%1\' has been created.', $fileName)
-        );
     }
 
     /**
@@ -269,11 +271,26 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
      */
     private function getDefaultPreference()
     {
-        $preferenceModel = $this->preferencesRepository->getById($this->preferencesResource->getDefault());
-        if (!$preferenceModel || !$preferenceModel->getId()) {
-            throw new \Magento\Framework\Exception\NoSuchEntityException(__('Default preferences not found.'));
+        $preferenceModel = null;
+        $defaultPreferencesId = $this->preferencesResource->getDefault();
+        if (0 < (int)$defaultPreferencesId) {
+            $preferenceModel = $this->preferencesRepository->getById($this->preferencesResource->getDefault());
+            if (!$preferenceModel || !$preferenceModel->getId()) {
+                throw new \Magento\Framework\Exception\NoSuchEntityException(
+                    __('Default connection preference record not found.')
+                );
+            }
         }
         return $preferenceModel;
+    }
+
+    /**
+     * @return bool
+     * @throws \Magento\Framework\Exception\LocalizedException
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    public function isDefaultPreferenceExist() {
+        return (bool)$this->getDefaultPreference();
     }
 
     /**
@@ -353,37 +370,41 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
      */
     public function createProductAttributeValue(array $valueAttributes = [])
     {
+
         if (array_key_exists('id', $valueAttributes) && array_key_exists('label', $valueAttributes)) {
-            $fileName = sprintf(
-                'attribute-option-%s-%s',
-                $this->fileNameHelper->getFileName($valueAttributes['label']),
-                $valueAttributes['id']
-            );
-            $storePreferenceId = $this->objectManager->create(\Qordoba\Connector\Model\ResourceModel\Preferences::class)
-                ->getDefault();
-            $storeId = $this->getDefaultPreference()->getStoreId();
-            $existingSubmissionModel = $this->getExistingSubmission(
-                $valueAttributes['id'],
-                \Qordoba\Connector\Api\Data\ContentInterface::TYPE_PRODUCT_ATTRIBUTE_OPTIONS
-            );
-            if ($existingSubmissionModel) {
-                $this->updateSubmissionVersion($existingSubmissionModel);
-            } else {
-                $submissionModel = $this->objectFactory->create();
-                $submissionModel->setTitle($valueAttributes['label']);
-                $submissionModel->setFileName($fileName);
-                $submissionModel->setTypeId(\Qordoba\Connector\Api\Data\ContentInterface::TYPE_PRODUCT_ATTRIBUTE_OPTIONS);
-                $submissionModel->setStoreId($storeId);
-                $submissionModel->setState(\Qordoba\Connector\Model\Content::STATE_PENDING);
-                $submissionModel->setVersion(\Qordoba\Connector\Model\Content::DEFAULT_VERSION);
-                $submissionModel->setPreferenceId($storePreferenceId);
-                $submissionModel->setContentId($valueAttributes['id']);
-                $this->objectManager->create($submissionModel->getResourceName())->save($submissionModel);
-                $this->eventRepository->createSuccess(
-                    $storeId,
-                    $submissionModel->getId(),
-                    __('Submission \'%1\' has been created.', $fileName)
+            $defaultPreferences = $this->getDefaultPreference();
+            if ($defaultPreferences) {
+                $fileName = sprintf(
+                    'attribute-option-%s-%s',
+                    $this->fileNameHelper->getFileName($valueAttributes['label']),
+                    $valueAttributes['id']
                 );
+                $storePreferenceId = $this->objectManager->create(\Qordoba\Connector\Model\ResourceModel\Preferences::class)
+                    ->getDefault();
+                $storeId = $defaultPreferences->getStoreId();
+                $existingSubmissionModel = $this->getExistingSubmission(
+                    $valueAttributes['id'],
+                    \Qordoba\Connector\Api\Data\ContentInterface::TYPE_PRODUCT_ATTRIBUTE_OPTIONS
+                );
+                if ($existingSubmissionModel) {
+                    $this->updateSubmissionVersion($existingSubmissionModel);
+                } else {
+                    $submissionModel = $this->objectFactory->create();
+                    $submissionModel->setTitle($valueAttributes['label']);
+                    $submissionModel->setFileName($fileName);
+                    $submissionModel->setTypeId(\Qordoba\Connector\Api\Data\ContentInterface::TYPE_PRODUCT_ATTRIBUTE_OPTIONS);
+                    $submissionModel->setStoreId($storeId);
+                    $submissionModel->setState(\Qordoba\Connector\Model\Content::STATE_PENDING);
+                    $submissionModel->setVersion(\Qordoba\Connector\Model\Content::DEFAULT_VERSION);
+                    $submissionModel->setPreferenceId($storePreferenceId);
+                    $submissionModel->setContentId($valueAttributes['id']);
+                    $this->objectManager->create($submissionModel->getResourceName())->save($submissionModel);
+                    $this->eventRepository->createSuccess(
+                        $storeId,
+                        $submissionModel->getId(),
+                        __('Submission \'%1\' has been created.', $fileName)
+                    );
+                }
             }
         }
         return true;
@@ -598,22 +619,25 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
      */
     public function repairByContent(\Magento\Framework\Model\AbstractModel $model)
     {
-        if ($model instanceof \Magento\Catalog\Model\Product) {
-            $model->setStoreId($this->getDefaultPreference()->getStoreId());
-            $this->repairProductSubmission($model);
-            $this->repairProductDescriptionSubmission($model);
-        } elseif ($model instanceof \Magento\Catalog\Model\Category) {
-            $model->setStoreId($this->getDefaultPreference()->getStoreId());
-            $this->repairProductCategorySubmission($model);
-        } elseif ($model instanceof \Magento\Cms\Model\Block) {
-            $model->setStoreId($this->getDefaultPreference()->getStoreId());
-            $this->repairBlockSubmission($model);
-        } elseif ($model instanceof \Magento\Cms\Model\Page) {
-            $model->setStoreId($this->getDefaultPreference()->getStoreId());
-            $this->repairPageSubmission($model);
-            $this->repairPageContentSubmission($model);
-        } elseif ($model instanceof \Magento\Catalog\Model\ResourceModel\Eav\Attribute) {
-            $this->repairProductAttributeSubmission($model);
+        $defaultPreference = $this->getDefaultPreference();
+        if ($defaultPreference) {
+            if ($model instanceof \Magento\Catalog\Model\Product) {
+                $model->setStoreId($defaultPreference->getStoreId());
+                $this->repairProductSubmission($model);
+                $this->repairProductDescriptionSubmission($model);
+            } elseif ($model instanceof \Magento\Catalog\Model\Category) {
+                $model->setStoreId($defaultPreference->getStoreId());
+                $this->repairProductCategorySubmission($model);
+            } elseif ($model instanceof \Magento\Cms\Model\Block) {
+                $model->setStoreId($defaultPreference->getStoreId());
+                $this->repairBlockSubmission($model);
+            } elseif ($model instanceof \Magento\Cms\Model\Page) {
+                $model->setStoreId($defaultPreference->getStoreId());
+                $this->repairPageSubmission($model);
+                $this->repairPageContentSubmission($model);
+            } elseif ($model instanceof \Magento\Catalog\Model\ResourceModel\Eav\Attribute) {
+                $this->repairProductAttributeSubmission($model);
+            }
         }
     }
 
@@ -652,7 +676,7 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
             $submissionModel->setFileName($fileName);
             $submissionModel->setTitle($name);
             $submissionModel->setState(\Qordoba\Connector\Model\Content::STATE_PENDING);
-            $submissionModel->setVersion( $submissionModel->getVersion() + 1);
+            $submissionModel->setVersion(\Qordoba\Connector\Model\Content::DEFAULT_VERSION);
             $submissionModel->setChecksum('');
             $this->objectManager->create($submissionModel->getResourceName())->save($submissionModel);
         }

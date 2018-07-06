@@ -48,7 +48,7 @@
     <fieldset name="data_details">
         <argument name="data" xsi:type="array">
             <item name="config" xsi:type="array">
-                <item name="label" xsi:type="string" translate="true">Qordoba Account Preferences</item>
+                <item name="label" xsi:type="string" translate="true">Qordoba Connection Preferences</item>
             </item>
         </argument>
         <field name="id">
@@ -138,6 +138,7 @@
                     <item name="dataScope" xsi:type="string">account_token</item>
                     <item name="validation" xsi:type="array">
                         <item name="required-entry" xsi:type="boolean">true</item>
+                        <!--<item name="pattern" xsi:type="string">/^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}+$/</item>-->
                     </item>
                 </item>
             </argument>

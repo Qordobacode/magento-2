@@ -53,6 +53,39 @@ class MassBlockCreate extends \Magento\Backend\App\Action implements \Qordoba\Co
     }
 
     /**
+     * @return \Magento\Framework\App\ResponseInterface|\Magento\Framework\Controller\ResultInterface|void
+     * @throws \InvalidArgumentException
+     * @throws \Magento\Framework\Exception\LocalizedException
+     */
+    public function execute()
+    {
+        $collection = $this->applySelection($this->collectionFactory->create());
+        $blockIds = $collection->getAllIds();
+        $resultRedirect = $this->resultFactory->create(\Magento\Framework\Controller\ResultFactory::TYPE_REDIRECT);
+        try {
+            if (!$this->contentRepository->isDefaultPreferenceExist()) {
+                $this->messageManager->addErrorMessage(
+                    __('Submission has not been created. Please, check your confection preferences')
+                );
+            } else {
+                foreach ($blockIds as $id) {
+                    $blockModel = $this->_objectManager->create(\Magento\Cms\Model\Block::class)->load($id);
+                    if ($blockModel && $blockModel->getId()) {
+                        $this->contentRepository->createBlock($blockModel);
+                    }
+                }
+                $this->messageManager->addSuccessMessage(
+                    __('A total of %1 record(s) have been submitted.',
+                        $collection->getSize())
+                );
+            }
+        } catch (\Exception $e) {
+            $this->messageManager->addExceptionMessage($e, __('Something went wrong while saving the data.'));
+        }
+        return $resultRedirect->setPath('*/*/');
+    }
+
+    /**
      * @param \Magento\Framework\Data\Collection\AbstractDb $collection
      * @return \Magento\Framework\Data\Collection\AbstractDb
      * @throws \Magento\Framework\Exception\LocalizedException
@@ -77,33 +110,6 @@ class MassBlockCreate extends \Magento\Backend\App\Action implements \Qordoba\Co
             throw new \Magento\Framework\Exception\LocalizedException(__($e->getMessage()));
         }
         return $collection;
-    }
-
-    /**
-     * @return \Magento\Framework\App\ResponseInterface|\Magento\Framework\Controller\ResultInterface|void
-     * @throws \InvalidArgumentException
-     * @throws \Magento\Framework\Exception\LocalizedException
-     */
-    public function execute()
-    {
-        $collection = $this->applySelection($this->collectionFactory->create());
-        $blockIds = $collection->getAllIds();
-        $resultRedirect = $this->resultFactory->create(\Magento\Framework\Controller\ResultFactory::TYPE_REDIRECT);
-        try {
-            foreach ($blockIds as $id) {
-                $blockModel = $this->_objectManager->create(\Magento\Cms\Model\Block::class)->load($id);
-                if ($blockModel && $blockModel->getId()) {
-                    $this->contentRepository->createBlock($blockModel);
-                }
-            }
-            $this->messageManager->addSuccessMessage(
-                __('A total of %1 record(s) have been submitted.',
-                $collection->getSize())
-            );
-        } catch (\Exception $e) {
-            $this->messageManager->addExceptionMessage($e, __('Something went wrong while saving the data.'));
-        }
-        return $resultRedirect->setPath('*/*/');
     }
 
     /**

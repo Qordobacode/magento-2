@@ -52,7 +52,7 @@ class MassRetry extends \Magento\Backend\App\Action implements \Qordoba\Connecto
     }
 
     /**
-     * @return \Magento\Framework\App\ResponseInterface|\Magento\Framework\Controller\ResultInterface|void
+     * @return \Magento\Framework\App\ResponseInterface|\Magento\Framework\Controller\ResultInterface
      * @throws \InvalidArgumentException
      * @throws \Magento\Framework\Exception\LocalizedException
      */
