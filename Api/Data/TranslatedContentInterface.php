@@ -38,6 +38,10 @@ interface TranslatedContentInterface
      * @const string
      */
     const TYPE_ID_FIELD = 'type_id';
+    /**
+     * @const string
+     */
+    const STORE_ID_FIELD = 'store_id';
 
     /**
      * @return string
@@ -93,6 +97,17 @@ interface TranslatedContentInterface
      * @return $this
      */
     public function setContentId($contentId);
+
+    /**
+     * @return int
+     */
+    public function getStoreId();
+
+    /**
+     * @param string|int $storeId
+     * @return $this
+     */
+    public function setStoreId($storeId);
 
     /**
      * @return int

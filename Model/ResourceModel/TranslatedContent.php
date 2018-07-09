@@ -55,53 +55,59 @@ class TranslatedContent extends \Magento\Framework\Model\ResourceModel\Db\Abstra
 
     /**
      * @param string|int $contentId
-     * @param string|int $typeID
+     * @param string|int $typeId
+     * @param string|int $storeId
      * @return string
      * @throws \Magento\Framework\Exception\LocalizedException
      */
-    public function getExistingTranslation($contentId, $typeID)
+    public function getExistingTranslation($contentId, $typeId, $storeId)
     {
         $connection = $this->getConnection();
-        $select = $connection->select();
-        $select->from($this->getMainTable())
-            ->where('type_id = ?', (int)$typeID)
+        $selectQuery = $connection->select()
+            ->from($this->getMainTable())
+            ->where('type_id = ?', (int)$typeId)
+            ->where('store_id = ?', (int)$storeId)
             ->where('translated_content_id = ?', (int)$contentId);
-        return $connection->fetchOne($select);
+        return $connection->fetchOne($selectQuery);
     }
 
     /**
      * @param string|int $contentId
      * @param $parentContentId
      * @param string|int $typeId
+     * @param string|int $storeId
      * @return string
      * @throws \Magento\Framework\Exception\LocalizedException
      */
-    public function getExistingParentTranslation($contentId, $parentContentId, $typeId)
+    public function getExistingParentTranslation($contentId, $parentContentId, $typeId, $storeId)
     {
         $connection = $this->getConnection();
-        $select = $connection->select();
-        $select->from($this->getMainTable())
-            ->where('type_id = ?', (int)$typeId)
-            ->where('translated_content_id != ?', (int)$contentId)
-            ->where('content_id = ?', (int)$parentContentId);
-        return $connection->fetchOne($select);
+        $selectQuery = $connection->select()
+            ->from($this->getMainTable())
+            ->where('type_id = ?', $typeId)
+            ->where('translated_content_id != ?', $contentId)
+            ->where('store_id != ?', $storeId)
+            ->where('content_id = ?', $parentContentId);
+        return $connection->fetchOne($selectQuery);
     }
 
     /**
      * @param string|int $submissionId
      * @param string|int $contentId
      * @param string|int $typeId
+     * @param string|int $storeId
      * @return string
      * @throws \Magento\Framework\Exception\LocalizedException
      */
-    public function getExistingRecord($submissionId, $contentId, $typeId)
+    public function getExistingRecord($submissionId, $contentId, $typeId, $storeId)
     {
         $connection = $this->getConnection();
-        $select = $connection->select();
-        $select->from($this->getMainTable())
-            ->where('type_id = ?', (int)$typeId)
-            ->where('content_id = ?', (int)$submissionId)
-            ->where('translated_content_id = ?', (int)$contentId);
-        return $connection->fetchOne($select);
+        $selectQuery = $connection->select()
+            ->from($this->getMainTable())
+            ->where('type_id = ?', $typeId)
+            ->where('content_id = ?', $submissionId)
+            ->where('store_id = ?', $storeId)
+            ->where('translated_content_id = ?', $contentId);
+        return $connection->fetchOne($selectQuery);
     }
 }

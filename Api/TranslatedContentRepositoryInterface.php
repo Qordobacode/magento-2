@@ -48,7 +48,8 @@ interface TranslatedContentRepositoryInterface
      * @param int|string $submissionId
      * @param int|string $contentId
      * @param int|string $typeId
+     * @param int|string $storeId
      * @return mixed
      */
-    public function create($submissionId, $contentId, $typeId);
+    public function create($submissionId, $contentId, $typeId, $storeId);
 }

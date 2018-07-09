@@ -111,8 +111,7 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
             $document = $this->documentHelper->getEmptyJsonDocument();
             $document->setName($submission['file_name']);
             $document->setTag($submission['version']);
-            $submissionModel = $this->managerHelper->loadModel(\Qordoba\Connector\Model\Content::class,
-                $submission['id']);
+            $submissionModel = $this->managerHelper->loadModel(\Qordoba\Connector\Model\Content::class, $submission['id']);
             $submissionTypeId = (int)$submissionModel->getTypeId();
             if ($submissionModel->isUnlocked()) {
                 try {
@@ -142,8 +141,7 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
                         $submission['id']);
                     if ($submissionModel && $submissionModel->getId()) {
                         $this->contentRepository->markSubmissionAsSent($submissionModel->getId());
-                        $this->contentRepository->addChecksum($submission['id'],
-                            $this->getSubmissionChecksum($submissionModel));
+                        $this->contentRepository->addChecksum($submission['id'], $this->getSubmissionChecksum($submissionModel));
                         $this->eventRepository->createSuccess($submissionModel->getStoreId(), $submissionModel->getId(),
                             __('Document \'%1\' has been sent to qordoba.', $document->getName()));
                     } else {
@@ -440,12 +438,12 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
         $productModel = $this->modelHelper->getProductModelById($productId, $storeId);
         if ($productModel && $productModel->getId()) {
             $productData['entity_id'] = $productModel->getId();
-            $productData['name'] = $productModel->getName();
+            $productData['name'] = (string)$productModel->getName();
             $productData['description'] = (string)$productModel->getData('description');
-            $productData['short_description'] = $productModel->getData('short_description');
-            $productData['meta_title'] = $productModel->getData('meta_title');
-            $productData['meta_description'] = $productModel->getData('meta_description');
-            $productData['meta_keyword'] = $productModel->getData('meta_keyword');
+            $productData['short_description'] = (string)$productModel->getData('short_description');
+            $productData['meta_title'] = (string)$productModel->getData('meta_title');
+            $productData['meta_description'] = (string)$productModel->getData('meta_description');
+            $productData['meta_keyword'] = (string)$productModel->getData('meta_keyword');
         }
         return $productData;
     }

@@ -157,20 +157,22 @@ class TranslatedContentRepository implements \Qordoba\Connector\Api\TranslatedCo
      * @param int|string $submissionId
      * @param int|string $contentId
      * @param int|string $typeId
+     * @param int|string $storeId
      * @return \Qordoba\Connector\Api\Data\TranslatedContentInterface
      */
-    public function create($submissionId, $contentId, $typeId)
+    public function create($submissionId, $contentId, $typeId, $storeId)
     {
         $existingRecord = $this->objectManager->get(\Qordoba\Connector\Model\ResourceModel\TranslatedContent::class)
-            ->getExistingRecord($submissionId, $contentId, $typeId);
+            ->getExistingRecord($submissionId, $contentId, $typeId, $storeId);
         $contentModel = $this->objectFactory->create();
-        if (!$existingRecord) {
+        if ($existingRecord) {
+            $contentModel->load($existingRecord);
+        } else {
             $contentModel->setContentId($submissionId);
             $contentModel->setTranslatedContentId($contentId);
             $contentModel->setTypeId($typeId);
+            $contentModel->setStoreId($storeId);
             $contentModel->save();
-        } else {
-            $contentModel->load($existingRecord);
         }
         return $contentModel;
     }

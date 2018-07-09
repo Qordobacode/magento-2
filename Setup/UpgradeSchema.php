@@ -107,6 +107,20 @@ class UpgradeSchema implements UpgradeSchemaInterface
             }
         }
 
+        if (version_compare($context->getVersion(), '1.0.12', '<')) {
+            $connection = $setup->getConnection();
+            if ($setup->getConnection()->isTableExists(self::QORDOBA_TRANSLATED_CONTENT_TABLE)) {
+                $connection->addColumn(
+                    self::QORDOBA_TRANSLATED_CONTENT_TABLE,
+                    'store_id',
+                    [
+                        'type' => Table::TYPE_INTEGER,
+                        'comment' => 'Translated content store'
+                    ]
+                );
+            }
+        }
+
         $setup->endSetup();
     }
 

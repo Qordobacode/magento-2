@@ -22,14 +22,6 @@ class TranslatedContent extends \Magento\Framework\Model\AbstractModel implement
     const CACHE_TAG = 'qordoba_connector_translated_content';
 
     /**
-     *
-     */
-    protected function _construct()
-    {
-        $this->_init(\Qordoba\Connector\Model\ResourceModel\TranslatedContent::class);
-    }
-
-    /**
      * @return array|string[]
      */
     public function getIdentities()
@@ -89,6 +81,23 @@ class TranslatedContent extends \Magento\Framework\Model\AbstractModel implement
     }
 
     /**
+     * @return int
+     */
+    public function getStoreId()
+    {
+        return $this->getData(self::STORE_ID_FIELD);
+    }
+
+    /**
+     * @param string|int $storeId
+     * @return $this
+     */
+    public function setStoreId($storeId)
+    {
+        return $this->setData(self::STORE_ID_FIELD, $storeId);
+    }
+
+    /**
      * @return int|mixed
      */
     public function getTranslatedContentId()
@@ -120,5 +129,13 @@ class TranslatedContent extends \Magento\Framework\Model\AbstractModel implement
     public function setTypeId($typeId)
     {
         return $this->setData(self::TYPE_ID_FIELD, $typeId);
+    }
+
+    /**
+     *
+     */
+    protected function _construct()
+    {
+        $this->_init(\Qordoba\Connector\Model\ResourceModel\TranslatedContent::class);
     }
 }

@@ -21,7 +21,7 @@ class State implements \Magento\Framework\Data\OptionSourceInterface
     {
         return [
             ['value' => \Qordoba\Connector\Model\Content::STATE_PENDING, 'label' => __('Pending')],
-            ['value' => \Qordoba\Connector\Model\Content::STATE_SENT, 'label' => __('Waiting For Translation')],
+            ['value' => \Qordoba\Connector\Model\Content::STATE_SENT, 'label' => __('Waiting For Completion')],
             ['value' => \Qordoba\Connector\Model\Content::STATE_DOWNLOADED, 'label' => __('Translated')],
             ['value' => \Qordoba\Connector\Model\Content::STATE_DISABLED, 'label' => __('Disabled')],
             ['value' => \Qordoba\Connector\Model\Content::STATE_ERROR, 'label' => __('Error')],
