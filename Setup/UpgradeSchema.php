@@ -107,7 +107,7 @@ class UpgradeSchema implements UpgradeSchemaInterface
             }
         }
 
-        if (version_compare($context->getVersion(), '1.0.12', '<')) {
+        if (version_compare($context->getVersion(), '1.0.16', '<')) {
             $connection = $setup->getConnection();
             if ($setup->getConnection()->isTableExists(self::QORDOBA_TRANSLATED_CONTENT_TABLE)) {
                 $connection->addColumn(
