@@ -86,7 +86,7 @@ class TranslatedContent extends \Magento\Framework\Model\ResourceModel\Db\Abstra
             ->from($this->getMainTable())
             ->where('type_id = ?', $typeId)
             ->where('translated_content_id != ?', $contentId)
-            ->where('store_id != ?', $storeId)
+            ->where('store_id = ?', $storeId)
             ->where('content_id = ?', $parentContentId);
         return $connection->fetchOne($selectQuery);
     }

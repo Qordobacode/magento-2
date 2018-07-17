@@ -379,12 +379,12 @@ class Download implements \Qordoba\Connector\Api\CronInterface
             \Magento\Cms\Api\Data\PageInterface::class)
             ->load($submission['content_id']);
         $pageModel->setData(\Magento\Cms\Api\Data\PageInterface::PAGE_ID, null);
-        $pageModel->setStores([$storeId]);
+        $pageModel->setStore($storeId);
 
         $translatedContent = null;
         $translatedParentContent = $this->getExistingTranslation(
             $submission['content_id'],
-            \Qordoba\Connector\Model\Content::TYPE_PAGE,
+            \Qordoba\Connector\Model\Content::TYPE_PAGE_CONTENT,
             $storeId
         );
 
@@ -393,7 +393,7 @@ class Download implements \Qordoba\Connector\Api\CronInterface
             $translatedChildContent = $this->getExistingParentTranslation(
                 $translatedParentContent->getTranslatedContentId(),
                 $translatedContent->getContentId(),
-                \Qordoba\Connector\Model\Content::TYPE_PAGE,
+                \Qordoba\Connector\Model\Content::TYPE_PAGE_CONTENT,
                 $storeId
             );
             if ($translatedChildContent) {
@@ -403,7 +403,8 @@ class Download implements \Qordoba\Connector\Api\CronInterface
         if ($translatedContent && $translatedContent->getId()) {
             $pageModel = \Magento\Framework\App\ObjectManager::getInstance()
                 ->create(\Magento\Cms\Api\Data\PageInterface::class)
-                ->load($translatedContent->getTranslatedContentId());
+                ->load($translatedContent->getTranslatedContentId())
+                ->setStore($storeId);
         }
 
         if (isset($translationData['Content'])) {
@@ -506,7 +507,7 @@ class Download implements \Qordoba\Connector\Api\CronInterface
             \Magento\Cms\Api\Data\PageInterface::class)
             ->load($submission['content_id']);
         $pageModel->setData(\Magento\Cms\Api\Data\PageInterface::PAGE_ID, null);
-        $pageModel->setStores([$storeId]);
+        $pageModel->setStoreId($storeId);
 
         $translatedContent = null;
         $translatedParentContent = $this->getExistingTranslation(
@@ -530,7 +531,8 @@ class Download implements \Qordoba\Connector\Api\CronInterface
         if ($translatedContent && $translatedContent->getId()) {
             $pageModel = \Magento\Framework\App\ObjectManager::getInstance()
                 ->create(\Magento\Cms\Api\Data\PageInterface::class)
-                ->load($translatedContent->getTranslatedContentId());
+                ->load($translatedContent->getTranslatedContentId())
+                ->setStore($storeId);
         }
 
         if ('' !== $translationData) {
@@ -541,13 +543,13 @@ class Download implements \Qordoba\Connector\Api\CronInterface
             $this->translatedContentRepository->create(
                 $submission['id'],
                 $submission['content_id'],
-                \Qordoba\Connector\Model\Content::TYPE_PAGE,
+                \Qordoba\Connector\Model\Content::TYPE_PAGE_CONTENT,
                 $storeId
             );
             $this->translatedContentRepository->create(
                 $submission['id'],
                 $pageModel->getId(),
-                \Qordoba\Connector\Model\Content::TYPE_PAGE,
+                \Qordoba\Connector\Model\Content::TYPE_PAGE_CONTENT,
                 $storeId
             );
             $this->eventRepository->createSuccess(
@@ -569,8 +571,9 @@ class Download implements \Qordoba\Connector\Api\CronInterface
     private function updateBlock($storeId, $submission, array $translationData = [])
     {
         $blockModel = $this->managerHelper->loadModel(\Magento\Cms\Model\Block::class, $submission['content_id']);
-        $blockModel->setStores([$storeId]);
         $blockModel->setId(null);
+        $blockModel->setStoreId($storeId);
+        $blockModel->setStores($storeId);
 
         $translatedContent = null;
         $translatedParentContent = $this->getExistingTranslation(
@@ -605,7 +608,8 @@ class Download implements \Qordoba\Connector\Api\CronInterface
             && ('nul' !== strtolower($translationData['Content']->content))) {
             $blockModel->setContent($translationData['Content']->content);
         }
-        $this->managerHelper->get($blockModel->getResourceName())->save($blockModel);
+
+        $this->managerHelper->get(\Magento\Cms\Model\BlockRepository::class)->save($blockModel);
         $this->translatedContentRepository->create(
             $submission['id'],
             $submission['content_id'],
