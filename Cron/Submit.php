@@ -137,13 +137,15 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
                     if (\Qordoba\Connector\Model\Content::TYPE_PRODUCT_DESCRIPTION === $submissionTypeId) {
                         $this->submitProductDescription($submission);
                     }
-                    $submissionModel = $this->managerHelper->loadModel(\Qordoba\Connector\Model\Content::class,
-                        $submission['id']);
+                    $submissionModel = $this->managerHelper->loadModel(
+                        \Qordoba\Connector\Model\Content::class,
+                        $submission['id']
+                    );
                     if ($submissionModel && $submissionModel->getId()) {
                         $this->contentRepository->markSubmissionAsSent($submissionModel->getId());
                         $this->contentRepository->addChecksum($submission['id'], $this->getSubmissionChecksum($submissionModel));
                         $this->eventRepository->createSuccess($submissionModel->getStoreId(), $submissionModel->getId(),
-                            __('Document \'%1\' has been sent to qordoba.', $document->getName()));
+                            __('Document \'%1\' has been sent to Qordoba.', $document->getName()));
                     } else {
                         $this->contentRepository->markSubmissionAsError($submission['id']);
                         $this->logger->error('<error>' . __('Content %1 model can\'t be found.',  $submissionModel->getId()) . '</error>');
@@ -151,12 +153,6 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
                             __('Content %1 model can\'t be found.', $submissionModel->getId()));
                     }
                 } catch (\Exception $e) {
-                    $this->contentRepository->updateSubmissionVersion($submission['id']);
-                    $this->eventRepository->createInfo(
-                        $submission['store_id'],
-                        $submission['id'],
-                        __('Submission version has been increased for: %1', $submission['file_name'])
-                    );
                     $this->eventRepository->createError(
                         $submission['store_id'],
                         $submission['id'],
@@ -335,7 +331,7 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
      * @param \Qordoba\Document $document
      * @throws \Exception
      */
-    private function submitProductCategory(array $submission = [], \Qordoba\Document $document)
+    private function submitProductCategory(array $submission, \Qordoba\Document $document)
     {
         $categoryData = $this->getProductCategory($submission['content_id'], $submission['store_id']);
         if (isset($categoryData['entity_id'])) {
@@ -345,9 +341,9 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
                 $documentSection->addTranslationString('description', $categoryData['description']);
             }
             if ($this->documentHelper->getDefaultPreferences()->getIsSepEnabled()) {
-                $metaTitle = $this->documentHelper->getDataFieldValue($categoryData, 'meta_title');
-                $metaKeywords = $this->documentHelper->getDataFieldValue($categoryData, 'meta_keywords');
-                $metaDescription = $this->documentHelper->getDataFieldValue($categoryData, 'meta_description');
+                $metaTitle = $this->documentHelper->getDataFieldValue($categoryData, 'meta_title', '');
+                $metaKeywords = $this->documentHelper->getDataFieldValue($categoryData, 'meta_keywords', '');
+                $metaDescription = $this->documentHelper->getDataFieldValue($categoryData, 'meta_description', '');
                 if ('' !== $metaKeywords) {
                     $documentSection->addTranslationString('meta_keywords', $metaKeywords);
                 }
@@ -373,12 +369,12 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
         $categoryData = [];
         $categoryModel = $this->modelHelper->getProductCategoryModelById($categoryId, $storeId);
         if ($categoryModel && $categoryModel->getId()) {
-            $categoryData['entity_id'] =  $categoryModel->getId();
-            $categoryData['name'] =  $categoryModel->getData()['name'];
-            $categoryData['description'] = (string)$categoryModel->getData('description', '');
-            $categoryData['meta_title'] = $categoryModel->getData('meta_title', '');
-            $categoryData['meta_description'] = $categoryModel->getData('meta_description', '');
-            $categoryData['meta_keyword'] = $categoryModel->getData('meta_keyword', '');
+            $categoryData['entity_id'] = $categoryModel->getId();
+            $categoryData['name'] = (string)$categoryModel->getData('name');
+            $categoryData['description'] = (string)$categoryModel->getData('description');
+            $categoryData['meta_title'] = (string)$categoryModel->getData('meta_title');
+            $categoryData['meta_description'] = (string)$categoryModel->getData('meta_description');
+            $categoryData['meta_keyword'] = (string)$categoryModel->getData('meta_keyword');
         }
         return $categoryData;
     }
@@ -394,7 +390,7 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
      * @throws \Qordoba\Exception\UploadException
      * @throws \Exception
      */
-    private function submitProduct(array $submission = [], \Qordoba\Document $document)
+    private function submitProduct(array $submission, \Qordoba\Document $document)
     {
         $productData = $this->getProduct($submission['content_id'], $submission['store_id']);
         if (isset($productData['entity_id'])) {

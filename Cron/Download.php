@@ -93,7 +93,8 @@ class Download implements \Qordoba\Connector\Api\CronInterface
             ->getSentContent(self::RECORDS_PER_JOB);
         $preferencesList = $this->managerHelper->get(\Qordoba\Connector\Model\ResourceModel\Preferences::class)->getActive();
         foreach ($sentSubmissions as $submission) {
-            $submissionModel = $this->managerHelper->loadModel(\Qordoba\Connector\Model\Content::class, $submission['id']);
+            $submissionModel = $this->managerHelper->loadModel(\Qordoba\Connector\Model\Content::class,
+                $submission['id']);
             if ($submissionModel->isUnlocked()) {
                 $this->contentRepository->markSubmissionAsLocked($submission['id']);
                 foreach ($preferencesList as $preference) {
@@ -110,7 +111,8 @@ class Download implements \Qordoba\Connector\Api\CronInterface
                                 $documentTranslation,
                                 $submission,
                                 $preference['store_id'],
-                                $preferencesModel);
+                                $preferencesModel
+                            );
                         } else {
                             $this->contentRepository->markSubmissionAsSent($submission['id']);
                         }
@@ -404,6 +406,7 @@ class Download implements \Qordoba\Connector\Api\CronInterface
             $pageModel = \Magento\Framework\App\ObjectManager::getInstance()
                 ->create(\Magento\Cms\Api\Data\PageInterface::class)
                 ->load($translatedContent->getTranslatedContentId())
+                ->setStores([$storeId])
                 ->setStore($storeId);
         }
 
@@ -532,6 +535,7 @@ class Download implements \Qordoba\Connector\Api\CronInterface
             $pageModel = \Magento\Framework\App\ObjectManager::getInstance()
                 ->create(\Magento\Cms\Api\Data\PageInterface::class)
                 ->load($translatedContent->getTranslatedContentId())
+                ->setStores([$storeId])
                 ->setStore($storeId);
         }
 
@@ -682,8 +686,10 @@ class Download implements \Qordoba\Connector\Api\CronInterface
                         $this->eventRepository->createInfo(
                             $submission['store_id'],
                             $submission['id'],
-                            __('Default Options (yes, no etc.) should be translated by Magento \'%1\'.',
-                                $submission['file_name'])
+                            __(
+                                'Default Options (yes, no etc.) should be translated by Magento \'%1\'.',
+                                $submission['file_name']
+                            )
                         );
                     }
                 }
