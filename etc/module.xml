@@ -6,5 +6,5 @@
   ~ @license https://www.qordoba.com/terms
   -->
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:Module/etc/module.xsd">
-    <module name="Qordoba_Connector" setup_version="1.0.18"/>
+    <module name="Qordoba_Connector" setup_version="1.0.19"/>
 </config>

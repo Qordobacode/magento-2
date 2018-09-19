@@ -153,6 +153,7 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
                             __('Content %1 model can\'t be found.', $submissionModel->getId()));
                     }
                 } catch (\Exception $e) {
+                    $this->contentRepository->markSubmissionAsError($submission['id']);
                     $this->eventRepository->createError(
                         $submission['store_id'],
                         $submission['id'],
