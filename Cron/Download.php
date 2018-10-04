@@ -577,7 +577,7 @@ class Download implements \Qordoba\Connector\Api\CronInterface
         $blockModel = $this->managerHelper->loadModel(\Magento\Cms\Model\Block::class, $submission['content_id']);
         $blockModel->setId(null);
         $blockModel->setStoreId($storeId);
-        $blockModel->setStores($storeId);
+        $blockModel->setStores([$storeId]);
 
         $translatedContent = null;
         $translatedParentContent = $this->getExistingTranslation(
@@ -603,7 +603,8 @@ class Download implements \Qordoba\Connector\Api\CronInterface
             $blockModel = $this->managerHelper->loadModel(
                 \Magento\Cms\Model\Block::class,
                 $translatedContent->getTranslatedContentId()
-            );
+            )->setStores([$storeId])
+                ->setStore($storeId);
         }
         if (isset($translationData['Content']->title) && ('nul' !== strtolower($translationData['Content']->title))) {
             $blockModel->setTitle($translationData['Content']->title);
