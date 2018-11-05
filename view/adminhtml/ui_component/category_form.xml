@@ -9,6 +9,7 @@
     <argument name="data" xsi:type="array">
         <item name="buttons" xsi:type="array">
             <item name="send-to-qordoba" xsi:type="string">Qordoba\Connector\Block\Adminhtml\ProductCategory\Edit\Button\SendButton</item>
+            <item name="send-batch-to-qordoba" xsi:type="string">Qordoba\Connector\Block\Adminhtml\ProductCategory\Edit\Button\SendBatchButton</item>
         </item>
     </argument>
 </form>
