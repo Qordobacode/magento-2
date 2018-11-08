@@ -622,17 +622,13 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
         $defaultPreference = $this->getDefaultPreference();
         if ($defaultPreference) {
             if ($model instanceof \Magento\Catalog\Model\Product) {
-                $model->setStoreId($defaultPreference->getStoreId());
                 $this->repairProductSubmission($model);
                 $this->repairProductDescriptionSubmission($model);
             } elseif ($model instanceof \Magento\Catalog\Model\Category) {
-                $model->setStoreId($defaultPreference->getStoreId());
                 $this->repairProductCategorySubmission($model);
             } elseif ($model instanceof \Magento\Cms\Model\Block) {
-                $model->setStoreId($defaultPreference->getStoreId());
                 $this->repairBlockSubmission($model);
             } elseif ($model instanceof \Magento\Cms\Model\Page) {
-                $model->setStoreId($defaultPreference->getStoreId());
                 $this->repairPageSubmission($model);
                 $this->repairPageContentSubmission($model);
             } elseif ($model instanceof \Magento\Catalog\Model\ResourceModel\Eav\Attribute) {
