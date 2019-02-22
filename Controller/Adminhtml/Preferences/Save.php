@@ -92,7 +92,7 @@ class Save extends \Magento\Backend\App\Action implements \Qordoba\Connector\Api
             try {
                 $this->preferencesResource->save($model);
                 $this->_eventManager->dispatch('qordoba_preferences_save_after', ['preferences' => $model]);
-                $this->messageManager->addSuccessMessage(__('You have saved the preference. Please check you mappings.'));
+                $this->messageManager->addSuccessMessage(__('You have saved the preference. Please check your Mappings page.'));
                 $this->dataPersistor->clear(\Qordoba\Connector\Model\Preferences::CACHE_TAG);
                 if ($this->getRequest()->getParam('back')) {
                     return $resultRedirect->setPath('*/*/edit', ['id' => $model->getId(), '_current' => true]);

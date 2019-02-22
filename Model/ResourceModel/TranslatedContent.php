@@ -27,7 +27,8 @@ class TranslatedContent extends \Magento\Framework\Model\ResourceModel\Db\Abstra
     public function __construct(
         \Magento\Framework\Model\ResourceModel\Db\Context $context,
         \Magento\Framework\Stdlib\DateTime\DateTime $currentDate
-    ) {
+    )
+    {
         parent::__construct($context);
         $this->dateTime = $currentDate;
     }
@@ -109,5 +110,15 @@ class TranslatedContent extends \Magento\Framework\Model\ResourceModel\Db\Abstra
             ->where('store_id = ?', $storeId)
             ->where('translated_content_id = ?', $contentId);
         return $connection->fetchOne($selectQuery);
+    }
+
+    /**
+     * @param string|int $contentId
+     * @throws \Magento\Framework\Exception\LocalizedException
+     */
+    public function deleteByContent($contentId)
+    {
+        $connection = $this->getConnection();
+        $connection->delete($this->getMainTable(), ['translated_content_id = ?' => $contentId]);
     }
 }

@@ -54,6 +54,10 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
      * @var \Qordoba\Connector\Api\Helper\ChecksumHelperInterface
      */
     protected $checksumHelper;
+    /**
+     * @var ResourceModel\TranslatedContent
+     */
+    protected $translatedContent;
 
     /**
      * ContentRepository constructor.
@@ -67,6 +71,7 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
      * @param \Qordoba\Connector\Api\Helper\FileNameHelperInterface $fileNameHelper
      * @param \Qordoba\Connector\Api\Helper\ChecksumHelperInterface $checksumHelper
      * @param \Magento\Framework\App\ResourceConnection $resourceConnection
+     * @param \Qordoba\Connector\Model\ResourceModel\TranslatedContent $translatedContent
      */
     public function __construct(
         \Qordoba\Connector\Model\ContentFactory $objectFactory,
@@ -78,7 +83,8 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
         \Qordoba\Connector\Model\PreferencesRepository $preferencesRepository,
         \Qordoba\Connector\Api\Helper\FileNameHelperInterface $fileNameHelper,
         \Qordoba\Connector\Api\Helper\ChecksumHelperInterface $checksumHelper,
-        \Magento\Framework\App\ResourceConnection $resourceConnection
+        \Magento\Framework\App\ResourceConnection $resourceConnection,
+        \Qordoba\Connector\Model\ResourceModel\TranslatedContent $translatedContent
     ) {
         $this->objectFactory = $objectFactory;
         $this->collectionFactory = $collectionFactory;
@@ -90,6 +96,7 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
         $this->fileNameHelper = $fileNameHelper;
         $this->checksumHelper = $checksumHelper;
         $this->resourceConnection = $resourceConnection;
+        $this->translatedContent = $translatedContent;
     }
 
     /**
@@ -202,6 +209,7 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
             $this->updateSubmissionVersion($existingSubmissionModel);
         } else {
             $this->createSubmissionModel($productModel, $productModel->getName(), $contentType);
+
         }
         return true;
     }
@@ -234,7 +242,7 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
      * @param string|int $type
      * @throws \Exception
      */
-    private function createSubmissionModel(\Magento\Framework\Model\AbstractModel $model, $title, $type)
+    private function createSubmissionModel(\Magento\Framework\Model\AbstractModel $model, $title, $type, $version = \Qordoba\Connector\Model\Content::DEFAULT_VERSION)
     {
         $defaultPreferences = $this->getDefaultPreference();
         if ($defaultPreferences) {
@@ -252,7 +260,7 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
             $submissionModel->setTypeId($type);
             $submissionModel->setStoreId($storeId);
             $submissionModel->setState(\Qordoba\Connector\Model\Content::STATE_PENDING);
-            $submissionModel->setVersion(\Qordoba\Connector\Model\Content::DEFAULT_VERSION);
+            $submissionModel->setVersion($version);
             $submissionModel->setPreferenceId($defaultPreferences->getId());
             $submissionModel->setContentId($model->getId());
             $this->objectManager->create($submissionModel->getResourceName())->save($submissionModel);
@@ -301,12 +309,16 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
      */
     public function createPage(\Magento\Cms\Api\Data\PageInterface $pageModel, $contentType)
     {
+        $version = \Qordoba\Connector\Model\Content::DEFAULT_VERSION;
         $existingSubmissionModel = $this->getExistingSubmission($pageModel->getId(), $contentType);
         if ($existingSubmissionModel) {
-            $this->updateSubmissionVersion($existingSubmissionModel);
-        } else {
-            $this->createSubmissionModel($pageModel, $pageModel->getTitle(), $contentType);
+            $object = $this->objectFactory->create()->load($existingSubmissionModel);
+            if ($object && $object->getId()) {
+                $version = $object->getVersion() + 1;
+                $this->delete($object);
+            }
         }
+        $this->createSubmissionModel($pageModel, $pageModel->getTitle(), $contentType, $version);
         return true;
     }
 
@@ -452,6 +464,7 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
      * @param \Magento\Framework\Model\AbstractModel $model
      * @return bool
      * @throws \Magento\Framework\Exception\CouldNotDeleteException
+     * @throws \Magento\Framework\Exception\LocalizedException
      */
     public function deleteByContent(\Magento\Framework\Model\AbstractModel $model)
     {
@@ -466,6 +479,7 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
         } elseif ($model instanceof \Magento\Catalog\Model\ResourceModel\Eav\Attribute) {
             $this->deleteProductAttributeSubmissions($model);
         }
+        $this->translatedContent->deleteByContent($model->getId());
         return true;
     }
 

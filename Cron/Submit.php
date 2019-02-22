@@ -19,15 +19,6 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
      */
     const RECORDS_PER_JOB = 20;
     /**
-     * @const string
-     */
-    const QORDOBA_OPEN_TAG = '<qordoba-curly-break>';
-    /**
-     * @const string
-     */
-    const QORDOBA_CLOSE_TAG = '</qordoba-curly-break>';
-
-    /**
      * @var \Psr\Log\LoggerInterface
      */
     protected $logger;
@@ -233,12 +224,7 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
      */
     private static function prepareContent($content = '')
     {
-        $preparedContent = str_replace(
-            ['{{', '}}', '_'],
-            [self::QORDOBA_OPEN_TAG, self::QORDOBA_CLOSE_TAG, '//'],
-            $content
-        );
-        return trim($preparedContent);
+        return trim($content);
     }
 
     /**
