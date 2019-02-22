@@ -135,7 +135,7 @@ class Download implements \Qordoba\Connector\Api\CronInterface
      */
     private static function prepareContent($content = '')
     {
-        return trim($content);
+        return trim(html_entity_decode($content));
     }
 
     /**
