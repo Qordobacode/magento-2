@@ -2,7 +2,7 @@
 <!--
   ~ @category Magento-2 Qordoba Connector Module
   ~ @package Qordoba_Connector
-  ~ @copyright Copyright (c) 2018
+  ~ @copyright Copyright (c) 2019
   ~ @license https://www.qordoba.com/terms
   -->
 <form xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Ui:etc/ui_configuration.xsd">

@@ -2,7 +2,7 @@
 /**
  * @category Magento-2 Qordoba Connector Module
  * @package Qordoba_Connector
- * @copyright Copyright (c) 2018
+ * @copyright Copyright (c) 2019
  * @license https://www.qordoba.com/terms
  */
 
@@ -18,6 +18,14 @@ class Download implements \Qordoba\Connector\Api\CronInterface
      * @const string
      */
     const RECORDS_PER_JOB = 20;
+    /**
+     * @const string
+     */
+    const QORDOBA_OPEN_TAG = '<qordoba-curly-break>';
+    /**
+     * @const string
+     */
+    const QORDOBA_CLOSE_TAG = '</qordoba-curly-break>';
 
     /**
      * @var \Psr\Log\LoggerInterface
@@ -128,6 +136,20 @@ class Download implements \Qordoba\Connector\Api\CronInterface
                 }
             }
         }
+    }
+
+    /**
+     * @param string $content
+     * @return string
+     */
+    private static function prepareContent($content = '')
+    {
+        $preparedContent = str_replace(
+            [self::QORDOBA_OPEN_TAG, self::QORDOBA_CLOSE_TAG, '<span>//</span>', ' \ ', ' / '],
+            ['{{', '}}', '_', '\\', '/'],
+            html_entity_decode($content)
+        );
+        return trim($preparedContent);
     }
 
     /**
@@ -540,7 +562,7 @@ class Download implements \Qordoba\Connector\Api\CronInterface
         }
 
         if ('' !== $translationData) {
-            $pageModel->setContent($translationData);
+            $pageModel->setContent(self::prepareContent($translationData));
             $this->managerHelper->get($pageModel->getResourceName())
                 ->save($pageModel);
 

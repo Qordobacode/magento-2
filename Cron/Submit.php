@@ -2,7 +2,7 @@
 /**
  * @category Magento-2 Qordoba Connector Module
  * @package Qordoba_Connector
- * @copyright Copyright (c) 2018
+ * @copyright Copyright (c) 2019
  * @license https://www.qordoba.com/terms
  */
 
@@ -18,6 +18,14 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
      * @const string
      */
     const RECORDS_PER_JOB = 20;
+    /**
+     * @const string
+     */
+    const QORDOBA_OPEN_TAG = '<qordoba-curly-break>';
+    /**
+     * @const string
+     */
+    const QORDOBA_CLOSE_TAG = '</qordoba-curly-break>';
 
     /**
      * @var \Psr\Log\LoggerInterface
@@ -85,7 +93,8 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
         \Qordoba\Connector\Api\Helper\ChecksumHelperInterface $checksumHelper,
         \Qordoba\Connector\Api\Helper\ObjectManagerHelperInterface $managerHelper,
         \Qordoba\Connector\Api\Helper\ModelHelperInterface $modelHelper
-    ) {
+    )
+    {
         $this->logger = $logger;
         $this->eventRepository = $eventRepository;
         $this->preferencesRepository = $preferencesRepository;
@@ -148,7 +157,7 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
                             __('Document \'%1\' has been sent to Qordoba.', $document->getName()));
                     } else {
                         $this->contentRepository->markSubmissionAsError($submission['id']);
-                        $this->logger->error('<error>' . __('Content %1 model can\'t be found.',  $submissionModel->getId()) . '</error>');
+                        $this->logger->error('<error>' . __('Content %1 model can\'t be found.', $submissionModel->getId()) . '</error>');
                         $this->eventRepository->createError($submissionModel->getStoreId(), $submissionModel->getId(),
                             __('Content %1 model can\'t be found.', $submissionModel->getId()));
                     }
@@ -183,20 +192,20 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
             $documentSection = $document->addSection('Content');
             $documentSection->addTranslationString(
                 'title',
-                $this->documentHelper->getDataFieldValue($pageData, 'title', __('Title'))
+                self::prepareContent($this->documentHelper->getDataFieldValue($pageData, 'title', __('Title')))
             );
             if ($this->documentHelper->getDefaultPreferences()->getIsSepEnabled()) {
                 $metaTitle = $this->documentHelper->getDataFieldValue($pageData, 'meta_title');
                 $metaKeywords = $this->documentHelper->getDataFieldValue($pageData, 'meta_keywords');
                 $metaDescription = $this->documentHelper->getDataFieldValue($pageData, 'meta_description');
                 if ('' !== $metaKeywords) {
-                    $documentSection->addTranslationString('meta_keywords', $metaKeywords);
+                    $documentSection->addTranslationString('meta_keywords', self::prepareContent($metaKeywords));
                 }
                 if ('' !== $metaDescription) {
-                    $documentSection->addTranslationString('meta_description', $metaDescription);
+                    $documentSection->addTranslationString('meta_description', self::prepareContent($metaDescription));
                 }
                 if ('' !== $metaTitle) {
-                    $documentSection->addTranslationString('meta_title', $metaTitle);
+                    $documentSection->addTranslationString('meta_title', self::prepareContent($metaTitle));
                 }
             }
             $document->createTranslation();
@@ -219,6 +228,20 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
     }
 
     /**
+     * @param string $content
+     * @return string
+     */
+    private static function prepareContent($content = '')
+    {
+        $preparedContent = str_replace(
+            ['{{', '}}', '_'],
+            [self::QORDOBA_OPEN_TAG, self::QORDOBA_CLOSE_TAG, '//'],
+            $content
+        );
+        return trim($preparedContent);
+    }
+
+    /**
      * @param array $submission
      * @throws \RuntimeException
      * @throws \Qordoba\Exception\AuthException
@@ -235,7 +258,7 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
             $document = $this->documentHelper->getHTMLEmptyDocument();
             $document->setName($submission['file_name']);
             $document->setTag($submission['version']);
-            $document->addTranslationContent($pageData['content']);
+            $document->addTranslationContent(self::prepareContent($pageData['content']));
             $document->createTranslation();
         }
     }
@@ -257,7 +280,7 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
         if (isset($blockData['block_id'])) {
             $documentSection = $document->addSection('Content');
             $documentSection->addTranslationString('title', $blockData['title']);
-            $documentSection->addTranslationString('content', $blockData['content']);
+            $documentSection->addTranslationString('content', self::prepareContent($blockData['content']));
             $document->createTranslation();
         }
     }
@@ -301,7 +324,7 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
                 $documentSection = $document->addSection('Options');
                 foreach ($options as $option) {
                     if ('' !== trim($option['label'])) {
-                        $documentSection->addTranslationString(trim($option['value']),
+                        $documentSection->addTranslationString(self::prepareContent($option['value']),
                             trim($option['label']));
                     }
                 }
@@ -337,22 +360,22 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
         $categoryData = $this->getProductCategory($submission['content_id'], $submission['store_id']);
         if (isset($categoryData['entity_id'])) {
             $documentSection = $document->addSection('Content');
-            $documentSection->addTranslationString('title', $categoryData['name']);
+            $documentSection->addTranslationString('title', self::prepareContent($categoryData['name']));
             if ('' !== $categoryData['description']) {
-                $documentSection->addTranslationString('description', $categoryData['description']);
+                $documentSection->addTranslationString('description', self::prepareContent($categoryData['description']));
             }
             if ($this->documentHelper->getDefaultPreferences()->getIsSepEnabled()) {
                 $metaTitle = $this->documentHelper->getDataFieldValue($categoryData, 'meta_title', '');
                 $metaKeywords = $this->documentHelper->getDataFieldValue($categoryData, 'meta_keywords', '');
                 $metaDescription = $this->documentHelper->getDataFieldValue($categoryData, 'meta_description', '');
                 if ('' !== $metaKeywords) {
-                    $documentSection->addTranslationString('meta_keywords', $metaKeywords);
+                    $documentSection->addTranslationString('meta_keywords', self::prepareContent($metaKeywords));
                 }
                 if ('' !== $metaDescription) {
-                    $documentSection->addTranslationString('meta_description', $metaDescription);
+                    $documentSection->addTranslationString('meta_description', self::prepareContent($metaDescription));
                 }
                 if ('' !== $metaTitle) {
-                    $documentSection->addTranslationString('meta_title', $metaTitle);
+                    $documentSection->addTranslationString('meta_title', self::prepareContent($metaTitle));
                 }
             }
             $document->createTranslation();
@@ -398,11 +421,13 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
             $documentSection = $document->addSection('Content');
             $documentSection->addTranslationString(
                 'title',
-                $this->documentHelper->getDataFieldValue($productData, 'name', __('Title'))
+                self::prepareContent($this->documentHelper->getDataFieldValue($productData, 'name', __('Title')))
             );
             $documentSection->addTranslationString(
                 'short_description',
-                $this->documentHelper->getDataFieldValue($productData, 'short_description', __('Short Description'))
+                self::prepareContent(
+                    $this->documentHelper->getDataFieldValue($productData, 'short_description', __('Short Description'))
+                )
             );
             if ($this->documentHelper->getDefaultPreferences()->getIsSepEnabled()) {
                 $metaTitle = $this->documentHelper->getDataFieldValue($productData, 'meta_title');
@@ -410,13 +435,13 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
                 $metaDescription = $this->documentHelper->getDataFieldValue($productData,
                     'meta_description');
                 if ('' !== $metaTitle) {
-                    $documentSection->addTranslationString('meta_title', $metaTitle);
+                    $documentSection->addTranslationString('meta_title', self::prepareContent($metaTitle));
                 }
                 if ('' !== $metaDescription) {
-                    $documentSection->addTranslationString('meta_description', $metaDescription);
+                    $documentSection->addTranslationString('meta_description', self::prepareContent($metaDescription));
                 }
                 if ('' !== $metaKeyword) {
-                    $documentSection->addTranslationString('meta_keyword', $metaKeyword);
+                    $documentSection->addTranslationString('meta_keyword', self::prepareContent($metaKeyword));
                 }
             }
             $document->createTranslation();
@@ -462,7 +487,7 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
             $document = $this->documentHelper->getHTMLEmptyDocument();
             $document->setName($submission['file_name']);
             $document->setTag($submission['version']);
-            $document->addTranslationContent($productData['description']);
+            $document->addTranslationContent(self::prepareContent($productData['description']));
             $document->createTranslation();
         } else {
             $this->eventRepository->createInfo(
