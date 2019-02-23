@@ -92,8 +92,10 @@ class Download implements \Qordoba\Connector\Api\CronInterface
             ->getSentContent(self::RECORDS_PER_JOB);
         $preferencesList = $this->managerHelper->get(\Qordoba\Connector\Model\ResourceModel\Preferences::class)->getActive();
         foreach ($sentSubmissions as $submission) {
-            $submissionModel = $this->managerHelper->loadModel(\Qordoba\Connector\Model\Content::class,
-                $submission['id']);
+            $submissionModel = $this->managerHelper->loadModel(
+                \Qordoba\Connector\Model\Content::class,
+                $submission['id']
+            );
             if ($submissionModel->isUnlocked()) {
                 $this->contentRepository->markSubmissionAsLocked($submission['id']);
                 foreach ($preferencesList as $preference) {
@@ -135,6 +137,8 @@ class Download implements \Qordoba\Connector\Api\CronInterface
      */
     private static function prepareContent($content = '')
     {
+        $content = ltrim($content, '<html><head></head><body>');
+        $content = rtrim($content, ' </body></html>');
         return trim(html_entity_decode($content));
     }
 
