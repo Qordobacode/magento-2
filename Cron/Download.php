@@ -426,7 +426,6 @@ class Download implements \Qordoba\Connector\Api\CronInterface
             if (isset($translationData['Content']->title)
                 && ('nul' !== strtolower($translationData['Content']->title))) {
                 $pageModel->setTitle($translationData['Content']->title);
-                $pageModel->setContentHeading($translationData['Content']->title);
             }
             if ($preferences->getIsSepEnabled()) {
                 if (isset($translationData['Content']->meta_keywords)
