@@ -298,7 +298,7 @@ class Download implements \Qordoba\Connector\Api\CronInterface
     {
         $updateAction = $this->managerHelper->get(\Magento\Catalog\Model\Product\Action::class);
         $productData = [];
-        if ('' !== $translationData) {
+        if ('' !== $translationData && '--' !== $translationData ) {
             $productData['description'] = $translationData;
         }
         if (0 < count($productData)) {
@@ -427,6 +427,10 @@ class Download implements \Qordoba\Connector\Api\CronInterface
                 && ('nul' !== strtolower($translationData['Content']->title))) {
                 $pageModel->setTitle($translationData['Content']->title);
             }
+            if (isset($translationData['Content']->headings)
+                && ('nul' !== strtolower($translationData['Content']->headings))) {
+                $pageModel->setContentHeading($translationData['Content']->headings);
+            }
             if ($preferences->getIsSepEnabled()) {
                 if (isset($translationData['Content']->meta_keywords)
                     && ('nul' !== strtolower($translationData['Content']->meta_keywords))) {
@@ -546,34 +550,36 @@ class Download implements \Qordoba\Connector\Api\CronInterface
             $pageModel = \Magento\Framework\App\ObjectManager::getInstance()
                 ->create(\Magento\Cms\Api\Data\PageInterface::class)
                 ->load($translatedContent->getTranslatedContentId())
-                ->setStores([$storeId])
-                ->setStore($storeId);
-        }
+                ->setData(\Magento\Cms\Api\Data\PageInterface::PAGE_ID, null)
+                ->setStoreId($storeId);
+            if ('' !== $translationData) {
+                $pageModel->setContent(self::prepareContent($translationData));
+                $this->managerHelper->get($pageModel->getResourceName())
+                    ->save($pageModel);
 
-        if ('' !== $translationData) {
-            $pageModel->setContent(self::prepareContent($translationData));
-            $this->managerHelper->get($pageModel->getResourceName())
-                ->save($pageModel);
-
-            $this->translatedContentRepository->create(
-                $submission['id'],
-                $submission['content_id'],
-                \Qordoba\Connector\Model\Content::TYPE_PAGE_CONTENT,
-                $storeId
-            );
-            $this->translatedContentRepository->create(
-                $submission['id'],
-                $pageModel->getId(),
-                \Qordoba\Connector\Model\Content::TYPE_PAGE_CONTENT,
-                $storeId
-            );
-            $this->eventRepository->createSuccess(
-                $storeId,
-                $submission['id'],
-                __('Translation has been downloaded for \'%1\'.', $submission['file_name'])
-            );
+                $this->translatedContentRepository->create(
+                    $submission['id'],
+                    $submission['content_id'],
+                    \Qordoba\Connector\Model\Content::TYPE_PAGE_CONTENT,
+                    $storeId
+                );
+                $this->translatedContentRepository->create(
+                    $submission['id'],
+                    $pageModel->getId(),
+                    \Qordoba\Connector\Model\Content::TYPE_PAGE_CONTENT,
+                    $storeId
+                );
+                $this->eventRepository->createSuccess(
+                    $storeId,
+                    $submission['id'],
+                    __('Translation has been downloaded for \'%1\'.', $submission['file_name'])
+                );
+                $this->contentRepository->markSubmissionAsDownloaded($submission['id']);
+            }
+        } else {
             $this->contentRepository->markSubmissionAsDownloaded($submission['id']);
         }
+
     }
 
     /**

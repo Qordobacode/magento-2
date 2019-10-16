@@ -185,6 +185,10 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
                 'title',
                 self::prepareContent($this->documentHelper->getDataFieldValue($pageData, 'title', __('Title')))
             );
+            $documentSection->addTranslationString(
+                'headings',
+                self::prepareContent($this->documentHelper->getDataFieldValue($pageData, 'content_heading', __('Content Heading')))
+            );
             if ($this->documentHelper->getDefaultPreferences()->getIsSepEnabled()) {
                 $metaTitle = $this->documentHelper->getDataFieldValue($pageData, 'meta_title');
                 $metaKeywords = $this->documentHelper->getDataFieldValue($pageData, 'meta_keywords');
@@ -469,11 +473,17 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
     private function submitProductDescription(array $submission = [])
     {
         $productData = $this->getProduct($submission['content_id'], $submission['store_id']);
-        if (isset($productData['entity_id']) && ('' !== $productData['description'])) {
+        if (isset($productData['entity_id'])) {
+
+        	$content = self::prepareContent($productData['description']);
             $document = $this->documentHelper->getHTMLEmptyDocument();
             $document->setName($submission['file_name']);
             $document->setTag($submission['version']);
-            $document->addTranslationContent(self::prepareContent($productData['description']));
+            if ('' === $content) {
+				$document->addTranslationContent('--');
+			} else {
+				$document->addTranslationContent(self::prepareContent($productData['description']));
+			}
             $document->createTranslation();
         } else {
             $this->eventRepository->createInfo(
