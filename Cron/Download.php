@@ -338,7 +338,7 @@ class Download implements \Qordoba\Connector\Api\CronInterface
             if (isset($translationData['Content'])) {
                 if (isset($translationData['Content']->title)
                     && ('nul' !== strtolower($translationData['Content']->title))) {
-                    $categoryModel->setData('name', trim($translationData['Content']->title));
+                    $categoryModel->setName(trim($translationData['Content']->title));
                 }
                 if (isset($translationData['Content']->description)
                     && ('nul' !== strtolower($translationData['Content']->description))) {
@@ -360,7 +360,8 @@ class Download implements \Qordoba\Connector\Api\CronInterface
                     }
                 }
             }
-            $categoryModel->save();
+            $this->managerHelper->get($categoryModel->getResourceName())->save($categoryModel);
+
             $this->translatedContentRepository->create(
                 $submission['id'],
                 $categoryModel->getId(),
@@ -373,6 +374,7 @@ class Download implements \Qordoba\Connector\Api\CronInterface
                 __('Translation has been downloaded for \'%1\'.', $submission['file_name'])
             );
             $this->contentRepository->markSubmissionAsDownloaded($submission['id']);
+            $this->resetCategoryDefaultValues($submission['content_id'], $storeId);
         }
     }
 
@@ -751,5 +753,17 @@ class Download implements \Qordoba\Connector\Api\CronInterface
                 'value' => $optionValue
             ]);
         }
+    }
+
+    public function resetCategoryDefaultValues($categoryId, $storeId) {
+        $tableName = $this->resource->getConnection()->getTableName('catalog_category_entity_int');
+        $connection = $this->resource->getConnection();
+        $connection->query(
+            "DELETE FROM magento.catalog_category_entity_int WHERE entity_id = :category_id AND store_id = :store_id",
+            [
+                'category_id' => $categoryId,
+                'store_id' => $storeId
+            ]
+        );
     }
 }
