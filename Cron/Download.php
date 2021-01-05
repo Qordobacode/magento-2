@@ -759,7 +759,7 @@ class Download implements \Qordoba\Connector\Api\CronInterface
         $tableName = $this->resource->getConnection()->getTableName('catalog_category_entity_int');
         $connection = $this->resource->getConnection();
         $connection->query(
-            "DELETE FROM magento.catalog_category_entity_int WHERE entity_id = :category_id AND store_id = :store_id",
+            "DELETE FROM {$tableName} WHERE entity_id = :category_id AND store_id = :store_id",
             [
                 'category_id' => $categoryId,
                 'store_id' => $storeId
