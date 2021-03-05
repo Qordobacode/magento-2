@@ -26,7 +26,7 @@ class DocumentHelper extends \Magento\Framework\App\Helper\AbstractHelper implem
     /**
      * @const string
      */
-    const APP_QORDOBA_API_URL = 'https://app.qordoba.com/api';
+    const APP_QORDOBA_API_URL = 'https://app.writer.com/api';
     /**
      * @const string
      */
