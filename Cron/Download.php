@@ -8,6 +8,9 @@
 
 namespace Qordoba\Connector\Cron;
 
+use Magento\Catalog\Api\Data\ProductInterface;
+use Magento\Framework\App\ObjectManager;
+
 /**
  * Class Submit
  * @package Qordoba\Connector\Cron
@@ -50,6 +53,10 @@ class Download implements \Qordoba\Connector\Api\CronInterface
      * @var \Qordoba\Connector\Api\Helper\LocaleNameHelperInterface
      */
     protected $localeNameHelper;
+    /**
+     * @var \Magento\Framework\EntityManager\MetadataPool
+     */
+    private $metadataPool;
 
     /**
      * Download constructor.
@@ -331,8 +338,10 @@ class Download implements \Qordoba\Connector\Api\CronInterface
         array $translationData = [],
         \Qordoba\Connector\Api\Data\PreferencesInterface $preferences
     ) {
-        $categoryModel = $this->managerHelper->loadModel(\Magento\Catalog\Model\Category::class,
-            $submission['content_id']);
+        $categoryModel = $this->managerHelper->loadModel(
+            \Magento\Catalog\Model\Category::class,
+            $submission['content_id']
+        );
         if ($categoryModel) {
             $categoryModel->setStoreId($storeId);
             if (isset($translationData['Content'])) {
@@ -755,15 +764,33 @@ class Download implements \Qordoba\Connector\Api\CronInterface
         }
     }
 
+    /**
+     * @throws \Exception
+     */
     public function resetCategoryDefaultValues($categoryId, $storeId) {
+        $linkField = $this->getMetadataPool()->getMetadata(ProductInterface::class)->getLinkField();
         $tableName = $this->resource->getConnection()->getTableName('catalog_category_entity_int');
         $connection = $this->resource->getConnection();
         $connection->query(
-            "DELETE FROM {$tableName} WHERE entity_id = :category_id AND store_id = :store_id",
+            "DELETE FROM {$tableName} WHERE {$linkField} = :category_id AND store_id = :store_id",
             [
                 'category_id' => $categoryId,
                 'store_id' => $storeId
             ]
         );
+    }
+
+    /**
+     * @return \Magento\Framework\EntityManager\MetadataPool|mixed
+     */
+    private function getMetadataPool()
+    {
+        if (!($this->metadataPool)) {
+            return ObjectManager::getInstance()->get(
+                '\Magento\Framework\EntityManager\MetadataPool'
+            );
+        }
+
+        return $this->metadataPool;
     }
 }

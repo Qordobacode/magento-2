@@ -37,7 +37,7 @@ class Context
             $buttonList->add(
                 'custom_button',
                 [
-                    'label' => __('Submit to Qordoba'),
+                    'label' => __('Submit to Writer'),
                     'onclick' => sprintf("location.href = '%s';", $this->getUrl($context)),
                     'class' => 'save primary'
                 ]

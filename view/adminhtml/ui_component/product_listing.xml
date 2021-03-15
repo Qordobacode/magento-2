@@ -14,7 +14,7 @@
                     <item name="config" xsi:type="array">
                         <item name="component" xsi:type="string">Magento_Ui/js/grid/tree-massactions</item>
                         <item name="type" xsi:type="string">submit_to_qordoba</item>
-                        <item name="label" xsi:type="string" translate="true">Submit to Qordoba</item>
+                        <item name="label" xsi:type="string" translate="true">Submit to Writer</item>
                         <item name="url" xsi:type="url" path="qordoba/submissions/massProductCreate"/>
                     </item>
                 </argument>

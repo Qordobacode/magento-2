@@ -41,7 +41,7 @@ class SendBatchButton implements \Magento\Framework\View\Element\UiComponent\Con
         $buttonData = [];
         if ($this->getObjectId()) {
             $buttonData = [
-                'label' => __('Submit Children to Qordoba'),
+                'label' => __('Submit Children to Writer'),
                 'class' => 'save primary',
                 'data_attribute' => [
                     'mage-init' => ['button' => ['event' => 'submit-batch-to-qordoba']],

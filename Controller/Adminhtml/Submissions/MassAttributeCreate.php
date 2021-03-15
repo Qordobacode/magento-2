@@ -65,7 +65,7 @@ class MassAttributeCreate extends \Magento\Backend\App\Action implements \Qordob
         try {
             if (!$this->contentRepository->isDefaultPreferenceExist()) {
                 $this->messageManager->addErrorMessage(
-                    __('Submission has not been created. Please, check your confection preferences')
+                    __('Submission has not been created. Please, check your connection preferences')
                 );
             } else {
                 foreach ($collectionItems as $item) {

@@ -145,7 +145,7 @@ class Submit implements \Qordoba\Connector\Api\CronInterface
                         $this->contentRepository->markSubmissionAsSent($submissionModel->getId());
                         $this->contentRepository->addChecksum($submission['id'], $this->getSubmissionChecksum($submissionModel));
                         $this->eventRepository->createSuccess($submissionModel->getStoreId(), $submissionModel->getId(),
-                            __('Document \'%1\' has been sent to Qordoba.', $document->getName()));
+                            __('Document \'%1\' has been sent to Writer.', $document->getName()));
                     } else {
                         $this->contentRepository->markSubmissionAsError($submission['id']);
                         $this->logger->error('<error>' . __('Content %1 model can\'t be found.', $submissionModel->getId()) . '</error>');

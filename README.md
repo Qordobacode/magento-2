@@ -33,6 +33,6 @@ $ magento setup:di:compile
 #### Manual usage
 
     1. Install n98-magerun2 in Magento 2 directory
-    2. Run `php n98-magerun2.phar sys:cron:run qordoba_submit` to push your submission to Qordoba
-    3. Run `php n98-magerun2.phar sys:cron:run qordoba_download` to pull from submission to Qordoba
+    2. Run `php n98-magerun2.phar sys:cron:run qordoba_submit` to push your submission to Writer
+    3. Run `php n98-magerun2.phar sys:cron:run qordoba_download` to pull from submission to Writer
 

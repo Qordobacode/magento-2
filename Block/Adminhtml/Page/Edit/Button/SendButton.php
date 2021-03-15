@@ -28,7 +28,7 @@ class SendButton extends \Magento\Cms\Block\Adminhtml\Page\Edit\GenericButton im
         $buttonData = [];
         if ($this->getObjectId()) {
             $buttonData = [
-                'label' => __('Submit to Qordoba'),
+                'label' => __('Submit to Writer'),
                 'class' => 'save primary',
                 'data_attribute' => [
                     'mage-init' => ['button' => ['event' => 'submit-to-qordoba']],

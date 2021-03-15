@@ -27,7 +27,7 @@ class SubmitAttributes
     {
         $attribute->addButton('batch_submit_qordoba',
             [
-                'label' => __('Batch Submit To Qordoba'),
+                'label' => __('Batch Submit To Writer'),
                 'class' => 'save primary',
                 'data_attribute' => [
                     'mage-init' => ['button' => ['event' => 'batch-submit-to-qordoba']],
