@@ -247,8 +247,6 @@ class ContentRepository implements \Qordoba\Connector\Api\ContentRepositoryInter
         $defaultPreferences = $this->getDefaultPreference();
         if ($defaultPreferences) {
             $storeId = $defaultPreferences->getStoreId();
-            var_dump(1);
-            exit;
             $fileName = $this->fileNameHelper->getFileNameByModel($model);
             if (\Qordoba\Connector\Api\Data\ContentInterface::TYPE_PAGE_CONTENT === $type) {
                 $fileName = sprintf('%s-content', $fileName);
