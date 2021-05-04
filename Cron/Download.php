@@ -331,6 +331,7 @@ class Download implements \Qordoba\Connector\Api\CronInterface
      * @param array $translationData
      * @param \Qordoba\Connector\Api\Data\PreferencesInterface $preferences
      * @throws \RuntimeException
+     * @throws \Exception
      */
     public function updateProductCategory(
         $storeId,
@@ -383,7 +384,7 @@ class Download implements \Qordoba\Connector\Api\CronInterface
                 __('Translation has been downloaded for \'%1\'.', $submission['file_name'])
             );
             $this->contentRepository->markSubmissionAsDownloaded($submission['id']);
-            $this->resetCategoryDefaultValues($submission['content_id'], $storeId);
+            $this->resetCategoryDefaultValues($categoryModel->getData('row_id'), $storeId);
         }
     }
 
@@ -767,17 +768,25 @@ class Download implements \Qordoba\Connector\Api\CronInterface
     /**
      * @throws \Exception
      */
-    public function resetCategoryDefaultValues($categoryId, $storeId) {
-        $linkField = $this->getMetadataPool()->getMetadata(ProductInterface::class)->getLinkField();
+    public function resetCategoryDefaultValues($rowId, $storeId) {
         $tableName = $this->resource->getConnection()->getTableName('catalog_category_entity_int');
         $connection = $this->resource->getConnection();
+        $linkField = $this->getMetadataPool()->getMetadata(ProductInterface::class)->getLinkField();
         $connection->query(
-            "DELETE FROM {$tableName} WHERE {$linkField} = :category_id AND store_id = :store_id",
+            "DELETE FROM {$tableName} WHERE {$linkField} = :row_id AND store_id = :store_id",
             [
-                'category_id' => $categoryId,
+                'row_id' => $rowId,
                 'store_id' => $storeId
             ]
         );
+//        $linkField = $this->getMetadataPool()->getMetadata(ProductInterface::class)->getLinkField();
+//        $connection->query(
+//            "DELETE FROM {$tableName} WHERE row_id = :category_id AND store_id = :store_id",
+//            [
+//                'category_id' => $categoryId,
+//                'store_id' => $storeId
+//            ]
+//        );
     }
 
     /**
